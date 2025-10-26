@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EarnerXd PRO - Admin Panel</title>
     <style>
-        /* CRITICAL FIX: Remove max-width on mobile container for full screen view */
+        /* CSS styles remain the same for UI fidelity and expanded layout */
         :root {
             --primary-color: #009688; 
             --primary-light: #52c7b8;
@@ -23,14 +23,14 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            /* Allow full width on hosted version */
+            align-items: center;
             min-height: 100vh;
         }
         .mobile-container {
             width: 100%;
-            min-height: 100vh; /* Use min-height for desktop view */
+            min-height: 100vh;
             max-width: 800px; /* NEW: Use a generous max-width for hosted/desktop admin view */
-            margin: 0 auto; /* Center the container on large screens */
+            margin: 0 auto;
             background-color: var(--surface-color);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
             display: flex;
@@ -70,95 +70,6 @@
         .material-btn:active { box-shadow: none; }
         .danger-btn { background-color: var(--secondary-color); }
         .danger-btn:hover { background-color: #D32F2F; }
-
-        .auth-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 24px;
-            text-align: center;
-        }
-        .auth-container h1 { color: var(--primary-color); }
-        .auth-container input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 16px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        .app-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 16px;
-            height: 56px;
-            background-color: var(--primary-color);
-            color: var(--on-primary);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-            position: absolute;
-            top: 0;
-            width: 100%;
-            z-index: 10;
-            max-width: 800px; /* NEW: Match container max-width */
-            margin: 0 auto;
-        }
-        .app-bar h2 { margin: 0; font-size: 1.25rem; font-weight: 400; }
-        .app-bar-icons span { margin-left: 8px; cursor: pointer; }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-        .stat-box {
-            text-align: center;
-            padding: 16px;
-            background-color: var(--primary-light);
-            color: var(--on-primary);
-            border-radius: 8px;
-            box-shadow: var(--shadow-elevation);
-        }
-        .stat-box h3 { margin: 0 0 4px 0; font-size: 1.5rem; }
-        .stat-box p { margin: 0; font-size: 0.8rem; opacity: 0.8; }
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Widen grid for desktop view */
-            gap: 16px;
-            margin-top: 24px;
-        }
-        .action-btn {
-            padding: 16px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: var(--shadow-elevation);
-            transition: all 0.2s;
-            background-color: var(--surface-color);
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-        .action-btn:hover { background-color: #f0f0f0; }
-        .action-btn i { font-size: 32px; display: block; margin-bottom: 8px; }
-
-        .material-form input, .material-form textarea, .material-form select {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0 16px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .material-form label {
-            display: block;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #555;
-            margin-bottom: 4px;
-        }
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -166,11 +77,9 @@
             padding: 12px;
             border-bottom: 1px solid #eee;
         }
-        .list-item:hover { background-color: #f9f9f9; }
-        .back-to-home {
-            width: calc(100% - 32px);
-            margin: 16px;
-            text-align: center;
+        .list-item-controls {
+            display: flex;
+            gap: 8px;
         }
     </style>
     <!-- Material Icons CDN -->
@@ -233,11 +142,10 @@
 
                 <h2 style="color: var(--primary-color); margin-top: 32px;">Admin Actions</h2>
                 <div class="action-grid">
-                    <div class="action-btn" data-page-target="add-task-page">
-                        <i class="material-icons">note_add</i>
-                        <span>Add Task</span>
+                    <div class="action-btn" data-page-target="task-management-page">
+                        <i class="material-icons">task</i>
+                        <span>Task Management</span>
                     </div>
-                    <!-- NEW/UPDATED BUTTONS FOR EDITING/LISTS -->
                     <div class="action-btn" data-page-target="tournament-management-page">
                         <i class="material-icons">edit</i>
                         <span>Edit Tournaments</span>
@@ -246,7 +154,6 @@
                         <i class="material-icons">check_circle</i>
                         <span>Task Requests</span>
                     </div>
-                    <!-- End New Buttons -->
                     
                     <div class="action-btn" data-page-target="withdrawal-requests-page">
                         <i class="material-icons">account_balance_wallet</i>
@@ -267,7 +174,22 @@
                 </div>
             </div>
 
-            <!-- ADD TASK PAGE (For adding new task) -->
+            <!-- TASK MANAGEMENT PAGE (NEW: To list, add, and delete tasks) -->
+            <div class="page page-content hidden" id="task-management-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Task Management</h1>
+                
+                <div class="material-card list-item" onclick="navigateTo('add-task-page')" style="background-color: #e0f7fa; margin-bottom: 24px; cursor: pointer;">
+                    <strong>+ Add New Task</strong>
+                    <i class="material-icons" style="color: var(--primary-color);">add_circle</i>
+                </div>
+                
+                <h3 style="margin-top: 0;">Current Tasks (Delete Option)</h3>
+                <div id="current-task-list">
+                    <p>Loading tasks...</p>
+                </div>
+            </div>
+
+            <!-- ADD TASK PAGE (Destination of the "Add New" button) -->
             <div class="page page-content hidden" id="add-task-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Add New Task</h1>
                 <div class="material-card material-form">
@@ -304,7 +226,7 @@
                     <p>Loading tournaments...</p>
                 </div>
             </div>
-            
+
             <!-- ADD TOURNAMENT PAGE (Destination of the "Add New" button) -->
             <div class="page page-content hidden" id="add-tournament-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Add New Tournament</h1>
@@ -474,7 +396,6 @@
 <script>
     // --- FIREBASE INITIALIZATION ---
 
-    // Your web app's Firebase configuration
     const firebaseConfig = {
         apiKey: "AIzaSyDk6xgLmdFFD1dujl8N0_Aas_pLZhCD4no",
         authDomain: "earnerxdpro.firebaseapp.com",
@@ -486,7 +407,6 @@
         measurementId: "G-QRTG23N6HQ"
     };
 
-    // Initialize Firebase (using older, globally available v8 SDK)
     const app = firebase.initializeApp(firebaseConfig);
     const auth = app.auth();
     const db = app.database();
@@ -513,6 +433,7 @@
         const titleMap = {
             'admin-dashboard-page': 'Admin Dashboard',
             'add-task-page': 'Add New Task',
+            'task-management-page': 'Task Management',
             'add-tournament-page': 'Add New Tournament',
             'task-requests-page': 'Task Requests',
             'withdrawal-requests-page': 'Withdrawals',
@@ -534,7 +455,8 @@
         if (pageId === 'withdrawal-requests-page') loadWithdrawalRequests();
         if (pageId === 'all-users-page') loadAllUsers();
         if (pageId === 'tournament-results-page') loadTournamentSelect();
-        if (pageId === 'tournament-management-page') renderTournamentEditList();
+        if (pageId === 'task-management-page') renderCurrentTasks(); // New function call
+        if (pageId === 'tournament-management-page') renderTournamentEditList(); // New function call
     }
     
     window.openModal = function(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
@@ -640,6 +562,50 @@
         });
     }
 
+    // NEW: Renders list of all current tasks with delete button
+    function renderCurrentTasks() {
+        const container = document.getElementById('current-task-list');
+        let html = '';
+        const tasks = Object.entries(allTasksData);
+
+        if (tasks.length === 0) {
+            container.innerHTML = '<p>No tasks currently added.</p>';
+            return;
+        }
+
+        tasks.forEach(([id, task]) => {
+            html += `
+                <div class="material-card list-item">
+                    <div>
+                        <strong>${task.name}</strong>
+                        <p style="font-size: 0.8rem; margin: 4px 0;">Reward: ${task.reward} C | Steps: ${task.steps}</p>
+                    </div>
+                    <div class="list-item-controls">
+                        <button class="material-btn danger-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteTask('${id}', '${task.name}')">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+    
+    // NEW: Delete Task Logic
+    window.deleteTask = async function(taskId, taskName) {
+        if (!confirm(`Are you sure you want to PERMANENTLY delete the task: ${taskName}? This cannot be undone.`)) return;
+
+        try {
+            // Delete the task
+            await db.ref('tasks/' + taskId).remove();
+            
+            // NOTE: Task requests/completions are kept for history, but are orphaned.
+            
+            alert(`Task "${taskName}" deleted successfully!`);
+            // List will automatically refresh due to listener
+        } catch (error) {
+            alert("Failed to delete task: " + error.message);
+        }
+    }
+
     window.addTask = async function() {
         const name = document.getElementById('task-name').value;
         const reward = parseInt(document.getElementById('task-reward').value);
@@ -657,19 +623,22 @@
 
             alert("Task Added Successfully!");
             document.getElementById('task-name').value = document.getElementById('task-reward').value = document.getElementById('task-link').value = document.getElementById('task-steps').value = document.getElementById('task-remark').value = '';
-            navigateTo('admin-dashboard-page');
+            navigateTo('task-management-page'); // Navigate to new list view
         } catch (error) {
             alert("Failed to add task: " + error.message);
         }
     }
-    
+
     // --- TOURNAMENT MANAGEMENT FUNCTIONS ---
 
     // Renders the list of upcoming tournaments with an edit button
     function renderTournamentEditList() {
         const container = document.getElementById('tournament-edit-list');
         let html = '';
-        const upcomingTours = Object.entries(allTournamentsData).filter(([id, tour]) => tour.dateTime && tour.dateTime > Date.now() && !tour.results);
+        // Filter for tournaments that are upcoming AND do not have results posted
+        const upcomingTours = Object.entries(allTournamentsData).filter(([id, tour]) => 
+            tour.dateTime && tour.dateTime > Date.now() && !tour.results
+        );
 
         if (upcomingTours.length === 0) {
             container.innerHTML = '<p>No upcoming tournaments to edit.</p>';
@@ -677,18 +646,59 @@
         }
 
         upcomingTours.forEach(([id, tour]) => {
+            // Count joined players (or default to 0)
+            const joinedCount = Object.keys(tour.joinedUsers || {}).length;
+
             html += `
-                <div class="material-card list-item">
-                    <div>
+                <div class="material-card list-item" style="align-items: flex-start;">
+                    <div style="flex-grow: 1;">
                         <strong>${tour.title}</strong>
                         <p style="font-size: 0.8rem; margin: 4px 0;">Entry: ${tour.entryFee} C | Date: ${new Date(tour.dateTime).toLocaleDateString()}</p>
+                        <p style="font-size: 0.8rem; color: #00796B;">Joined Players: ${joinedCount} <a href="#" onclick="viewJoinedPlayers(event, '${id}', '${tour.title}')">View Details</a></p>
                         <p style="font-size: 0.8rem; color: ${tour.roomId ? 'green' : 'orange'};">Room Details: ${tour.roomId ? 'SET' : 'MISSING'}</p>
                     </div>
-                    <button class="material-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openEditTournamentModal('${id}')">Edit</button>
+                    <div class="list-item-controls">
+                        <button class="material-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openEditTournamentModal('${id}')">Edit Room/Time</button>
+                    </div>
                 </div>
             `;
         });
         container.innerHTML = html;
+    }
+    
+    // NEW: View Joined Players Details
+    window.viewJoinedPlayers = function(e, tourId, tourName) {
+        e.preventDefault();
+        const tour = allTournamentsData[tourId];
+        const joinedUsers = tour.joinedUsers || {};
+        
+        let listHtml = `<h3>Joined Players for: ${tourName}</h3>`;
+        if (Object.keys(joinedUsers).length === 0) {
+             listHtml += `<p>No players have joined this tournament yet.</p>`;
+        } else {
+             listHtml += `<ul style="list-style-type: none; padding: 0; text-align: left;">`;
+             for (const userId in joinedUsers) {
+                 const user = joinedUsers[userId];
+                 listHtml += `<li><strong>${user.username}</strong> (IGN: ${user.ign}, UID: ${user.gameUID})</li>`;
+             }
+             listHtml += `</ul>`;
+        }
+        
+        // Use the generic modal to display the list
+        document.getElementById('modal-action-title').innerHTML = listHtml;
+        document.getElementById('action-reason').value = '';
+        document.getElementById('action-reason').classList.add('hidden');
+        document.getElementById('modal-action-confirm-btn').classList.add('hidden');
+        document.getElementById('modal-action-confirm-btn').textContent = 'Close'; // Use button for Close action
+        document.getElementById('modal-action-confirm-btn').style.backgroundColor = '#757575';
+        
+        // Re-open/hijack the task-action-modal for display only
+        openModal('task-action-modal');
+        document.querySelector('#task-action-modal .modal-content').style.maxWidth = '400px';
+        document.querySelector('#task-action-modal .modal-content').style.textAlign = 'left';
+        document.querySelector('#task-action-modal .material-btn[onclick="closeModal(\'task-action-modal\')"]').textContent = 'Close';
+
+        // NOTE: A more robust approach would be a dedicated Tournament View Modal
     }
 
 
@@ -724,7 +734,7 @@
 
             alert("Tournament Added Successfully!");
             document.getElementById('tour-id').value = document.getElementById('tour-title').value = document.getElementById('tour-datetime').value = document.getElementById('tour-prize').value = document.getElementById('tour-per-kill').value = document.getElementById('tour-entry-fee').value = '';
-            navigateTo('tournament-management-page');
+            navigateTo('tournament-management-page'); 
         } catch (error) {
             alert("Failed to add tournament: " + error.message);
         }
@@ -785,10 +795,9 @@
 
         const html = requests.map(req => `
             <div class="material-card" style="border-left: 5px solid var(--primary-color);">
-                <strong>${req.taskName}</strong> for ${req.username} (${req.isRework ? 'REWORK' : 'NEW'})
-                <p style="margin: 4px 0;">Reward: <strong>${req.reward} Coins</strong></p>
-                <p style="margin: 4px 0;">Remark: <span style="font-style: italic;">${req.remark || 'N/A'}</span></p>
-                <p style="margin: 4px 0;">SS Link: <a href="${req.ssLink}" target="_blank">View Proof (Click Here)</a></p>
+                <strong>${req.taskName}</strong> for <strong>${req.username}</strong>
+                <p style="margin: 4px 0;">Reward: <strong>${req.reward} Coins</strong> | Status: **Pending**</p>
+                <p style="margin: 4px 0; color: #00796B;">User Submission: <span style="font-style: italic;">${req.ssLink}</span></p>
                 <div style="margin-top: 10px; display: flex; gap: 8px;">
                     <button class="material-btn" onclick="approveTask('${req.id}', '${req.userId}', '${req.taskId}', ${req.reward}, '${req.taskName}')">Approve</button>
                     <button class="material-btn" style="background-color: orange;" onclick="prepareTaskAction('${req.id}', '${req.userId}', '${req.taskId}', '${req.username}', '${req.taskName}', 'Rework')">Rework</button>
@@ -808,6 +817,12 @@
         document.getElementById('modal-action-taskname').textContent = taskName;
         document.getElementById('modal-action-confirm-btn').textContent = `Confirm ${action}`;
         document.getElementById('action-reason').value = '';
+
+        document.querySelector('#task-action-modal .modal-content').style.maxWidth = '350px';
+        document.querySelector('#task-action-modal .modal-content').style.textAlign = 'center';
+        document.getElementById('action-reason').classList.remove('hidden');
+        document.getElementById('modal-action-confirm-btn').classList.remove('hidden');
+
 
         if (action === 'Rework') {
             document.getElementById('action-reason').placeholder = 'Enter instructions for the user (required)...';
@@ -885,7 +900,7 @@
         }
     }
 
-    // --- WITHDRAWAL REQUESTS ---
+    // --- WITHDRAWAL REQUESTS (Logic unchanged) ---
     function loadWithdrawalRequests() {
         db.ref('withdrawalRequests').orderByChild('status').equalTo('Pending').on('value', (snapshot) => {
             const requests = [];
@@ -981,7 +996,8 @@
 
         const html = userKeys.map(uid => {
             const user = users[uid];
-            if (!user.email) return '';
+            // CRITICAL FIX: Explicitly exclude the admin from the user list
+            if (user.email === ADMIN_EMAIL || !user.email) return '';
             
             const statusColor = user.isBlocked ? 'var(--secondary-color)' : 'var(--primary-color)';
             return `
@@ -991,7 +1007,7 @@
                 </div>
             `;
         }).join('');
-        container.innerHTML = html || '<p>No registered users found.</p>';
+        container.innerHTML = html || '<p>No registered users found (excluding admin).</p>';
     }
 
     window.viewUserDetails = function(uid) {
@@ -1094,26 +1110,12 @@
 
 
     function loadTournamentSelect() {
+        // Post Results Page: Populate the Select dropdown
         const select = document.getElementById('select-tournament');
         select.innerHTML = '<option value="">-- Select Tournament --</option>';
 
         for (const id in allTournamentsData) {
             const tour = allTournamentsData[id];
-
-            if (tour.dateTime && tour.dateTime > Date.now() && !tour.results) {
-                 const editButton = `<button class="material-btn" style="padding: 4px 8px; font-size: 0.7rem; margin-left: 8px;" onclick="openEditTournamentModal('${id}')">Edit Room Details</button>`;
-                 
-                 const container = document.getElementById('tournament-management-page').querySelector('#tournament-edit-list');
-                 let tourElement = document.getElementById(`edit-btn-${id}`);
-
-                 if (!tourElement) {
-                     tourElement = document.createElement('div');
-                     tourElement.id = `edit-btn-${id}`;
-                     tourElement.innerHTML = `<div class="material-card list-item"><span>${tour.title}</span>${editButton}</div>`;
-                     container.appendChild(tourElement);
-                 }
-            }
-
 
             if (!tour.results && tour.dateTime && tour.dateTime < Date.now()) { 
                 const option = document.createElement('option');
@@ -1121,6 +1123,9 @@
                 option.textContent = `${tour.title} (${new Date(tour.dateTime).toLocaleDateString()})`;
                 select.appendChild(option);
             }
+        }
+        if (select.options.length === 1) {
+            select.innerHTML = '<option value="">-- No finished tournaments to post results for --</option>';
         }
     }
 
@@ -1182,4 +1187,4 @@
     }
 </script>
 </body>
-</html>
+                        </html>
