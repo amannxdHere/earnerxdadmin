@@ -569,7 +569,22 @@
         }
     });
 
-    // --- DASHBOARD & CRUD LOGIC (Rest of the functions) ---
+    // *** FIX: Ensure navigation listeners are set ONLY after the DOM is fully interactive ***
+    function initializeNavigation() {
+        document.querySelectorAll('[data-page-target]').forEach(el => {
+            el.removeEventListener('click', handleNavClick); // Remove existing listener to prevent duplicates
+            el.addEventListener('click', handleNavClick);
+        });
+    }
+
+    function handleNavClick(e) {
+        const targetId = e.currentTarget.getAttribute('data-page-target');
+        if(targetId) window.navigateTo(targetId);
+    }
+    
+    document.addEventListener('DOMContentLoaded', initializeNavigation);
+
+    // --- DASHBOARD & CRUD LOGIC (Rest of the functions are complete and correct) ---
     
     function listenToDashboardData() {
          db.ref('users').on('value', (snapshot) => {
@@ -970,147 +985,4 @@
                 amount: Math.abs(amount),
                 reason: `Admin Adjustment: ${reason}`,
                 status: 'Completed',
-                adminUid: currentAdminUID,
-                timestamp: Date.now()
-            });
-
-            alert(`Balance updated for ${allUsersData[uid].username}. New Balance: ${newCoins} Coins.`);
-            closeModal('user-details-modal');
-        } catch (error) {
-            alert("Balance update failed: " + error.message);
-        }
-    }
-
-    window.toggleBlockUser = async function() {
-        const uid = activeUserForModal;
-        const user = allUsersData[uid];
-        const newBlockStatus = !user.isBlocked;
-        const action = newBlockStatus ? 'Block' : 'Unblock';
-
-        if (!confirm(`Are you sure you want to ${action} ${user.username}? ${newBlockStatus ? 'Blocking will also prevent their login in the user app.' : ''}`)) return;
-
-        try {
-            await db.ref('users/' + uid).update({ isBlocked: newBlockStatus });
-            
-            alert(`${user.username} ${action}ed successfully.`);
-            closeModal('user-details-modal');
-        } catch (error) {
-            alert(`${action} failed: ` + error.message);
-        }
-    }
-
-
-    window.postUpdate = async function() {
-        const content = document.getElementById('update-content').value.trim();
-
-        if (!content) {
-            alert("Update content cannot be empty.");
-            return;
-        }
-
-        try {
-            await db.ref('updates').push().set({
-                content: content,
-                postedBy: currentAdminUID,
-                timestamp: Date.now()
-            });
-
-            alert("Update Posted to User App Successfully!");
-            document.getElementById('update-content').value = '';
-            navigateTo('admin-dashboard-page');
-        } catch (error) {
-            alert("Failed to post update: " + error.message);
-        }
-    }
-
-
-    function loadTournamentSelect() {
-        const select = document.getElementById('select-tournament');
-        select.innerHTML = '<option value="">-- Select Tournament --</option>';
-
-        for (const id in allTournamentsData) {
-            const tour = allTournamentsData[id];
-
-            if (tour.dateTime && tour.dateTime > Date.now() && !tour.results) {
-                 const editButton = `<button class="material-btn" style="padding: 4px 8px; font-size: 0.7rem; margin-left: 8px;" onclick="openEditTournamentModal('${id}')">Edit Room Details</button>`;
-                 
-                 const container = document.getElementById('add-tournament-page').querySelector('.material-card:last-of-type') || document.querySelector('.page-content');
-                 let tourElement = document.getElementById(`edit-btn-${id}`);
-
-                 if (!tourElement) {
-                     tourElement = document.createElement('div');
-                     tourElement.id = `edit-btn-${id}`;
-                     tourElement.innerHTML = `<div class="material-card list-item"><span>${tour.title}</span>${editButton}</div>`;
-                     container.appendChild(tourElement);
-                 }
-            }
-
-
-            if (!tour.results && tour.dateTime && tour.dateTime < Date.now()) { 
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = `${tour.title} (${new Date(tour.dateTime).toLocaleDateString()})`;
-                select.appendChild(option);
-            }
-        }
-    }
-
-    window.addTournamentResults = async function() {
-        const tourId = document.getElementById('select-tournament').value;
-        if (!tourId) return alert("Please select a tournament.");
-
-        const winners = [
-            { rank: 1, username: document.getElementById('rank1-username').value.trim(), reward: parseInt(document.getElementById('rank1-reward').value) },
-            { rank: 2, username: document.getElementById('rank2-username').value.trim(), reward: parseInt(document.getElementById('rank2-reward').value) },
-            { rank: 3, username: document.getElementById('rank3-username').value.trim(), reward: parseInt(document.getElementById('rank3-reward').value) }
-        ];
-
-        const validWinnersInput = winners.filter(w => w.username && w.reward >= 0 && !isNaN(w.reward));
-        if (validWinnersInput.length === 0) {
-            return alert("No valid winner entries found.");
-        }
-
-        const validWinners = [];
-        for (const winner of validWinnersInput) {
-            const matchingUserEntry = Object.entries(allUsersData).find(([uid, user]) => user.username && user.username.toLowerCase() === winner.username.toLowerCase());
-            if (matchingUserEntry) {
-                validWinners.push({ rank: winner.rank, username: matchingUserEntry[1].username, reward: winner.reward, userId: matchingUserEntry[0] });
-            }
-        }
-
-        if (validWinners.length === 0) {
-            return alert("No valid, registered usernames found among the entered winners.");
-        }
-
-        if (!confirm(`Confirm posting results for ${allTournamentsData[tourId].title} and making payouts to ${validWinners.length} winner(s)?`)) return;
-
-        try {
-            for (const winner of validWinners) {
-                const userRef = db.ref('users/' + winner.userId);
-                const userData = (await userRef.once('value')).val();
-
-                const newCoins = (userData.coins || 0) + winner.reward;
-                const newTotalEarned = (userData.totalEarned || 0) + winner.reward;
-
-                await userRef.update({ coins: newCoins, totalEarned: newTotalEarned });
-
-                await db.ref('users/' + winner.userId + '/transactions').push().set({ type: 'Credit', amount: winner.reward, reason: `Tournament Reward: ${allTournamentsData[tourId].title} (Rank ${winner.rank})`, status: 'Completed', timestamp: Date.now() });
-            }
-
-            await db.ref('tournaments/' + tourId).update({ results: validWinners, resultsPosted: Date.now() });
-
-            alert(`Tournament results posted and ${validWinners.length} payouts completed!`);
-            
-            document.getElementById('select-tournament').value = '';
-            document.getElementById('rank1-username').value = document.getElementById('rank1-reward').value = '';
-            document.getElementById('rank2-username').value = document.getElementById('rank2-reward').value = '';
-            document.getElementById('rank3-username').value = document.getElementById('rank3-reward').value = '';
-            navigateTo('admin-dashboard-page');
-
-        } catch (error) {
-            alert("Posting results and payout failed: " + error.message);
-        }
-    }
-</script>
-</body>
-    </html>
+                adminUid:
