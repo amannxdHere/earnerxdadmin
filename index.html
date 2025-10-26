@@ -5,17 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EarnerXd PRO - Admin Panel</title>
     <style>
-        /* CSS styles remain the same for UI fidelity and expanded layout */
+        /* CSS Overhaul for Flutter/Material Theme */
         :root {
-            --primary-color: #009688; 
-            --primary-light: #52c7b8;
-            --secondary-color: #FF5252;
-            --background-color: #e8eaf6;
+            --primary-color: #009688; /* Teal Admin Color */
+            --primary-dark: #004d40; /* Darker Teal */
+            --secondary-color: #FF5252; /* Red for alerts/actions */
+            --background-color: #e8eaf6; /* Light Blue/Gray Background */
             --surface-color: #ffffff;
             --on-primary: #ffffff;
             --on-surface: #1f1f1f;
-            --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            /* Enhanced Shadow for Flutter-like Elevation */
+            --shadow-elevation: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            --flutter-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
         }
+
         body {
             font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
             background-color: var(--background-color);
@@ -23,21 +26,22 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
             min-height: 100vh;
         }
+
         .mobile-container {
             width: 100%;
             min-height: 100vh;
-            max-width: 800px; /* NEW: Use a generous max-width for hosted/desktop admin view */
+            max-width: 900px; /* Wider for desktop/management view */
             margin: 0 auto;
             background-color: var(--surface-color);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2); /* Deeper shadow */
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
         }
+
         .hidden { display: none !important; }
         .page {
             flex-grow: 1;
@@ -48,38 +52,69 @@
         }
         .material-card {
             background-color: var(--surface-color);
-            border-radius: 8px;
+            border-radius: 12px; /* More rounded */
             box-shadow: var(--shadow-elevation);
             padding: 16px;
-            margin: 16px 0;
+            margin: 12px 0;
             transition: all 0.3s ease;
         }
         .material-btn {
             background-color: var(--primary-color);
             color: var(--on-primary);
             border: none;
-            padding: 10px 16px;
-            border-radius: 4px;
+            padding: 12px 20px; /* Slightly larger buttons */
+            border-radius: 8px; /* More rounded buttons */
             cursor: pointer;
             text-transform: uppercase;
             font-weight: 500;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+            transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
         }
-        .material-btn:hover { background-color: #00796B; }
-        .material-btn:active { box-shadow: none; }
+        .material-btn:hover { background-color: #00796B; box-shadow: var(--flutter-shadow); }
+        .material-btn:active { transform: scale(0.98); box-shadow: none; }
         .danger-btn { background-color: var(--secondary-color); }
         .danger-btn:hover { background-color: #D32F2F; }
-        .list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid #eee;
+
+        .app-bar {
+            background-color: var(--primary-dark); /* Darker primary color for top bar */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
         }
-        .list-item-controls {
-            display: flex;
-            gap: 8px;
+
+        .dashboard-grid {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive grid */
+        }
+        .stat-box {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: var(--on-primary);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--flutter-shadow);
+        }
+
+        .action-grid {
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        }
+        .action-btn {
+            background-color: #f5f5f5;
+            color: var(--primary-dark);
+            border-radius: 12px;
+            transition: background-color 0.2s;
+        }
+        .action-btn:hover {
+             background-color: #e0e0e0;
+        }
+        
+        .material-form input, .material-form textarea, .material-form select {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+        .material-form input:focus, .material-form textarea:focus, .material-form select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 150, 136, 0.2);
+            outline: none;
         }
     </style>
     <!-- Material Icons CDN -->
@@ -174,7 +209,7 @@
                 </div>
             </div>
 
-            <!-- TASK MANAGEMENT PAGE (NEW: To list, add, and delete tasks) -->
+            <!-- TASK MANAGEMENT PAGE (List, Add, Delete) -->
             <div class="page page-content hidden" id="task-management-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Task Management</h1>
                 
@@ -255,6 +290,9 @@
                         <option value="Duo">Duo</option>
                         <option value="Squad">Squad</option>
                     </select>
+
+                    <label for="tour-max-players">Max Players</label>
+                    <input type="number" id="tour-max-players" placeholder="e.g. 50">
 
                     <button class="material-btn" onclick="addTournament()">Add Tournament</button>
                 </div>
@@ -537,7 +575,7 @@
             let totalRewards = 0;
 
             for (const uid in users) {
-                 if (users[uid].email) {
+                 if (users[uid].email && users[uid].email !== ADMIN_EMAIL) { // FIX: Exclude admin from user count
                     count++;
                     totalRewards += users[uid].totalEarned || 0;
                  }
@@ -594,13 +632,9 @@
         if (!confirm(`Are you sure you want to PERMANENTLY delete the task: ${taskName}? This cannot be undone.`)) return;
 
         try {
-            // Delete the task
             await db.ref('tasks/' + taskId).remove();
             
-            // NOTE: Task requests/completions are kept for history, but are orphaned.
-            
             alert(`Task "${taskName}" deleted successfully!`);
-            // List will automatically refresh due to listener
         } catch (error) {
             alert("Failed to delete task: " + error.message);
         }
@@ -646,15 +680,18 @@
         }
 
         upcomingTours.forEach(([id, tour]) => {
-            // Count joined players (or default to 0)
             const joinedCount = Object.keys(tour.joinedUsers || {}).length;
+            const isFull = tour.maxPlayers && joinedCount >= tour.maxPlayers;
 
             html += `
                 <div class="material-card list-item" style="align-items: flex-start;">
                     <div style="flex-grow: 1;">
                         <strong>${tour.title}</strong>
                         <p style="font-size: 0.8rem; margin: 4px 0;">Entry: ${tour.entryFee} C | Date: ${new Date(tour.dateTime).toLocaleDateString()}</p>
-                        <p style="font-size: 0.8rem; color: #00796B;">Joined Players: ${joinedCount} <a href="#" onclick="viewJoinedPlayers(event, '${id}', '${tour.title}')">View Details</a></p>
+                        <p style="font-size: 0.8rem; color: #00796B;">Joined Players: ${joinedCount} ${tour.maxPlayers ? `/ ${tour.maxPlayers}` : ''} 
+                            <a href="#" onclick="viewJoinedPlayers(event, '${id}', '${tour.title}')">View Details</a>
+                            ${isFull ? '<span style="color:red; font-weight:bold;"> (FULL)</span>' : ''}
+                        </p>
                         <p style="font-size: 0.8rem; color: ${tour.roomId ? 'green' : 'orange'};">Room Details: ${tour.roomId ? 'SET' : 'MISSING'}</p>
                     </div>
                     <div class="list-item-controls">
@@ -672,33 +709,27 @@
         const tour = allTournamentsData[tourId];
         const joinedUsers = tour.joinedUsers || {};
         
-        let listHtml = `<h3>Joined Players for: ${tourName}</h3>`;
+        let listHtml = `<h3 style="margin-bottom: 12px;">Joined Players for: ${tourName}</h3>`;
         if (Object.keys(joinedUsers).length === 0) {
              listHtml += `<p>No players have joined this tournament yet.</p>`;
         } else {
              listHtml += `<ul style="list-style-type: none; padding: 0; text-align: left;">`;
+             listHtml += `<li style="font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 4px;">Username | IGN | UID</li>`;
              for (const userId in joinedUsers) {
                  const user = joinedUsers[userId];
-                 listHtml += `<li><strong>${user.username}</strong> (IGN: ${user.ign}, UID: ${user.gameUID})</li>`;
+                 listHtml += `<li style="padding-top: 4px;">${user.username} | ${user.ign} | ${user.gameUID}</li>`;
              }
              listHtml += `</ul>`;
         }
         
-        // Use the generic modal to display the list
         document.getElementById('modal-action-title').innerHTML = listHtml;
-        document.getElementById('action-reason').value = '';
         document.getElementById('action-reason').classList.add('hidden');
         document.getElementById('modal-action-confirm-btn').classList.add('hidden');
-        document.getElementById('modal-action-confirm-btn').textContent = 'Close'; // Use button for Close action
-        document.getElementById('modal-action-confirm-btn').style.backgroundColor = '#757575';
         
-        // Re-open/hijack the task-action-modal for display only
         openModal('task-action-modal');
         document.querySelector('#task-action-modal .modal-content').style.maxWidth = '400px';
         document.querySelector('#task-action-modal .modal-content').style.textAlign = 'left';
         document.querySelector('#task-action-modal .material-btn[onclick="closeModal(\'task-action-modal\')"]').textContent = 'Close';
-
-        // NOTE: A more robust approach would be a dedicated Tournament View Modal
     }
 
 
@@ -710,10 +741,11 @@
         const perKill = parseInt(document.getElementById('tour-per-kill').value);
         const entryFee = parseInt(document.getElementById('tour-entry-fee').value);
         const mode = document.getElementById('tour-mode').value;
+        const maxPlayers = parseInt(document.getElementById('tour-max-players').value);
 
 
-        if (!id || !title || !dateTime || isNaN(prizePool) || isNaN(perKill) || isNaN(entryFee)) {
-            alert("Please fill in all required fields with valid values.");
+        if (!id || !title || !dateTime || isNaN(prizePool) || isNaN(perKill) || isNaN(entryFee) || isNaN(maxPlayers) || maxPlayers <= 0) {
+            alert("Please fill in all required fields, including a valid Max Players count.");
             return;
         }
         if ((await db.ref('tournaments/' + id).once('value')).exists()) {
@@ -723,7 +755,7 @@
 
         try {
             await db.ref('tournaments/' + id).set({
-                id, title, mode,
+                id, title, mode, maxPlayers,
                 dateTime: new Date(dateTime).getTime(),
                 prizePool, perKill, entryFee,
                 joinedUsers: {}, results: null,
@@ -733,7 +765,7 @@
             });
 
             alert("Tournament Added Successfully!");
-            document.getElementById('tour-id').value = document.getElementById('tour-title').value = document.getElementById('tour-datetime').value = document.getElementById('tour-prize').value = document.getElementById('tour-per-kill').value = document.getElementById('tour-entry-fee').value = '';
+            document.getElementById('tour-id').value = document.getElementById('tour-title').value = document.getElementById('tour-datetime').value = document.getElementById('tour-prize').value = document.getElementById('tour-per-kill').value = document.getElementById('tour-entry-fee').value = document.getElementById('tour-max-players').value = '';
             navigateTo('tournament-management-page'); 
         } catch (error) {
             alert("Failed to add tournament: " + error.message);
@@ -797,7 +829,10 @@
             <div class="material-card" style="border-left: 5px solid var(--primary-color);">
                 <strong>${req.taskName}</strong> for <strong>${req.username}</strong>
                 <p style="margin: 4px 0;">Reward: <strong>${req.reward} Coins</strong> | Status: **Pending**</p>
-                <p style="margin: 4px 0; color: #00796B;">User Submission: <span style="font-style: italic;">${req.ssLink}</span></p>
+                <!-- Submission Link is now explicitly listed for admin manual check -->
+                <p style="margin: 4px 0; color: #00796B;">Submission Link/Code: <span style="font-style: italic;">${req.ssLink}</span></p>
+                <p style="margin: 4px 0;">User Remark: <span style="font-style: italic;">${req.remark || 'N/A'}</span></p>
+
                 <div style="margin-top: 10px; display: flex; gap: 8px;">
                     <button class="material-btn" onclick="approveTask('${req.id}', '${req.userId}', '${req.taskId}', ${req.reward}, '${req.taskName}')">Approve</button>
                     <button class="material-btn" style="background-color: orange;" onclick="prepareTaskAction('${req.id}', '${req.userId}', '${req.taskId}', '${req.username}', '${req.taskName}', 'Rework')">Rework</button>
@@ -996,8 +1031,7 @@
 
         const html = userKeys.map(uid => {
             const user = users[uid];
-            // CRITICAL FIX: Explicitly exclude the admin from the user list
-            if (user.email === ADMIN_EMAIL || !user.email) return '';
+            if (user.email === ADMIN_EMAIL || !user.email) return ''; // FIX: Exclude admin
             
             const statusColor = user.isBlocked ? 'var(--secondary-color)' : 'var(--primary-color)';
             return `
@@ -1187,4 +1221,4 @@
     }
 </script>
 </body>
-                        </html>
+    </html>
