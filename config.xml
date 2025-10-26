@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.earnerxdpro.admin" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>EarnerXd Admin</name>
+    <description>
+        Admin Panel for EarnerXd PRO. Restricted Access.
+    </description>
+    <author email="admin22@earnerxdpro.com" href="http://earnerxdpro.com">
+        Admin Team
+    </author>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    
+    <!-- FIX 1: Allows loading local file paths in modern Android webviews -->
+    <preference name="AndroidInsecureFileModeEnabled" value="true" />
+    <preference name="Orientation" value="portrait" />
+    <preference name="SplashScreenDelay" value="3000" />
+    <preference name="SplashScreen" value="screen" />
+    <preference name="AllowInlineMediaPlayback" value="true" />
+
+    <platform name="android">
+        <!-- FIX: Using standard admin placeholders -->
+        <icon src="res/icon/android/admin-icon-192.png" density="hdpi" />
+        <splash src="res/screen/android/admin-screen-xhdpi-portrait.png" density="port-xhdpi" />
+    </platform>
+    
+    <platform name="ios">
+        <icon src="res/icon/ios/admin-Icon-60@3x.png" width="180" height="180" />
+        <splash src="res/screen/ios/admin-Default-Landscape@2x.png" width="2048" height="1536" />
+    </platform>
+    
+    <!-- FIX 2: Removed deprecated whitelist, kept statusbar -->
+    <plugin name="cordova-plugin-statusbar" version="2.4.3" />
+</widget>
