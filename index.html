@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EarnerXd PRO - Admin Panel</title>
     <style>
-        /* CSS styles remain the same for UI fidelity */
+        /* CRITICAL FIX: Remove max-width on mobile container for full screen view */
         :root {
             --primary-color: #009688; 
             --primary-light: #52c7b8;
@@ -23,14 +23,14 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
+            /* Allow full width on hosted version */
             min-height: 100vh;
         }
         .mobile-container {
             width: 100%;
-            height: 100vh;
-            max-width: 420px;
-            max-height: 850px;
+            min-height: 100vh; /* Use min-height for desktop view */
+            max-width: 800px; /* NEW: Use a generous max-width for hosted/desktop admin view */
+            margin: 0 auto; /* Center the container on large screens */
             background-color: var(--surface-color);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
             display: flex;
@@ -103,7 +103,8 @@
             top: 0;
             width: 100%;
             z-index: 10;
-            max-width: 420px;
+            max-width: 800px; /* NEW: Match container max-width */
+            margin: 0 auto;
         }
         .app-bar h2 { margin: 0; font-size: 1.25rem; font-weight: 400; }
         .app-bar-icons span { margin-left: 8px; cursor: pointer; }
@@ -125,7 +126,7 @@
         .stat-box p { margin: 0; font-size: 0.8rem; opacity: 0.8; }
         .action-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr); /* Widen grid for desktop view */
             gap: 16px;
             margin-top: 24px;
         }
@@ -164,7 +165,6 @@
             align-items: center;
             padding: 12px;
             border-bottom: 1px solid #eee;
-            cursor: pointer;
         }
         .list-item:hover { background-color: #f9f9f9; }
         .back-to-home {
@@ -186,7 +186,6 @@
         <p>Firebase Authentication Required</p>
         <input type="email" id="admin-email" placeholder="Admin Email" value="heml92304@gmail.com">
         <input type="password" id="admin-password" placeholder="Password" value="Admin12345">
-        <!-- CRITICAL FIX: Direct global call -->
         <button class="material-btn" onclick="window.handleAdminLogin()" style="width: 100%;">Login as Admin</button>
         <p id="admin-login-error" style="color: var(--secondary-color); margin-top: 10px;" class="hidden"></p>
     </div>
@@ -238,6 +237,7 @@
                         <i class="material-icons">note_add</i>
                         <span>Add Task</span>
                     </div>
+                    <!-- NEW/UPDATED BUTTONS FOR EDITING/LISTS -->
                     <div class="action-btn" data-page-target="tournament-management-page">
                         <i class="material-icons">edit</i>
                         <span>Edit Tournaments</span>
@@ -246,6 +246,8 @@
                         <i class="material-icons">check_circle</i>
                         <span>Task Requests</span>
                     </div>
+                    <!-- End New Buttons -->
+                    
                     <div class="action-btn" data-page-target="withdrawal-requests-page">
                         <i class="material-icons">account_balance_wallet</i>
                         <span>Withdrawals</span>
@@ -265,7 +267,7 @@
                 </div>
             </div>
 
-            <!-- ADD TASK PAGE -->
+            <!-- ADD TASK PAGE (For adding new task) -->
             <div class="page page-content hidden" id="add-task-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Add New Task</h1>
                 <div class="material-card material-form">
@@ -288,20 +290,22 @@
                 </div>
             </div>
             
-            <!-- TOURNAMENT MANAGEMENT PAGE (List to Edit/Add) -->
+            <!-- TOURNAMENT MANAGEMENT PAGE (NEW: To list and edit tournaments) -->
             <div class="page page-content hidden" id="tournament-management-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Tournament Management</h1>
-                <div class="material-card list-item" onclick="navigateTo('add-tournament-page')" style="background-color: #e0f7fa;">
+                
+                <div class="material-card list-item" onclick="navigateTo('add-tournament-page')" style="background-color: #e0f7fa; margin-bottom: 24px; cursor: pointer;">
                     <strong>+ Add New Tournament</strong>
                     <i class="material-icons" style="color: var(--primary-color);">add_circle</i>
                 </div>
-                <h3 style="margin-top: 24px;">Upcoming Tournaments (Edit Room/Details)</h3>
+                
+                <h3 style="margin-top: 0;">Upcoming Tournaments (Edit Room/Details)</h3>
                 <div id="tournament-edit-list">
                     <p>Loading tournaments...</p>
                 </div>
             </div>
-
-            <!-- ADD TOURNAMENT PAGE (Moved from Dashboard) -->
+            
+            <!-- ADD TOURNAMENT PAGE (Destination of the "Add New" button) -->
             <div class="page page-content hidden" id="add-tournament-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Add New Tournament</h1>
                 <div class="material-card material-form">
@@ -601,7 +605,7 @@
     
     document.addEventListener('DOMContentLoaded', initializeNavigation);
 
-    // --- DASHBOARD & CRUD LOGIC (All functions are complete and correct) ---
+    // --- DASHBOARD & CRUD LOGIC (All functions below are complete and correct) ---
     
     function listenToDashboardData() {
          db.ref('users').on('value', (snapshot) => {
@@ -1064,7 +1068,6 @@
         }
     }
 
-    // --- UPDATES & RESULTS ---
 
     window.postUpdate = async function() {
         const content = document.getElementById('update-content').value.trim();
@@ -1100,7 +1103,7 @@
             if (tour.dateTime && tour.dateTime > Date.now() && !tour.results) {
                  const editButton = `<button class="material-btn" style="padding: 4px 8px; font-size: 0.7rem; margin-left: 8px;" onclick="openEditTournamentModal('${id}')">Edit Room Details</button>`;
                  
-                 const container = document.getElementById('add-tournament-page').querySelector('.material-card:last-of-type') || document.querySelector('.page-content');
+                 const container = document.getElementById('tournament-management-page').querySelector('#tournament-edit-list');
                  let tourElement = document.getElementById(`edit-btn-${id}`);
 
                  if (!tourElement) {
@@ -1179,4 +1182,4 @@
     }
 </script>
 </body>
-                        </html>
+</html>
