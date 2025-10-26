@@ -159,6 +159,9 @@
             margin-bottom: 4px;
         }
         .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 12px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
@@ -216,7 +219,6 @@
                         <i class="material-icons" style="font-size: 32px;">paid</i>
                         <h3 id="total-rewards-given">0</h3>
                         <p>Rewards Given (Approx)</p>
-                    </p>
                     </div>
                     <div class="stat-box">
                         <i class="material-icons" style="font-size: 32px;">assignment</i>
@@ -236,9 +238,9 @@
                         <i class="material-icons">note_add</i>
                         <span>Add Task</span>
                     </div>
-                    <div class="action-btn" data-page-target="add-tournament-page">
-                        <i class="material-icons">add_box</i>
-                        <span>Add Tournament</span>
+                    <div class="action-btn" data-page-target="tournament-management-page">
+                        <i class="material-icons">edit</i>
+                        <span>Edit Tournaments</span>
                     </div>
                     <div class="action-btn" data-page-target="task-requests-page">
                         <i class="material-icons">check_circle</i>
@@ -285,8 +287,21 @@
                     <button class="material-btn" onclick="addTask()">Add Task</button>
                 </div>
             </div>
+            
+            <!-- TOURNAMENT MANAGEMENT PAGE (List to Edit/Add) -->
+            <div class="page page-content hidden" id="tournament-management-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Tournament Management</h1>
+                <div class="material-card list-item" onclick="navigateTo('add-tournament-page')" style="background-color: #e0f7fa;">
+                    <strong>+ Add New Tournament</strong>
+                    <i class="material-icons" style="color: var(--primary-color);">add_circle</i>
+                </div>
+                <h3 style="margin-top: 24px;">Upcoming Tournaments (Edit Room/Details)</h3>
+                <div id="tournament-edit-list">
+                    <p>Loading tournaments...</p>
+                </div>
+            </div>
 
-            <!-- ADD TOURNAMENT PAGE -->
+            <!-- ADD TOURNAMENT PAGE (Moved from Dashboard) -->
             <div class="page page-content hidden" id="add-tournament-page" style="padding: 16px;">
                 <h1 style="color: var(--primary-color); margin-top: 0;">Add New Tournament</h1>
                 <div class="material-card material-form">
@@ -499,7 +514,8 @@
             'withdrawal-requests-page': 'Withdrawals',
             'all-users-page': 'All Users Info',
             'post-updates-page': 'Post Updates',
-            'tournament-results-page': 'Post Results'
+            'tournament-results-page': 'Post Results',
+            'tournament-management-page': 'Edit Tournaments'
         };
 
         document.getElementById('app-bar-title').textContent = titleMap[pageId] || 'Admin Panel';
@@ -514,6 +530,7 @@
         if (pageId === 'withdrawal-requests-page') loadWithdrawalRequests();
         if (pageId === 'all-users-page') loadAllUsers();
         if (pageId === 'tournament-results-page') loadTournamentSelect();
+        if (pageId === 'tournament-management-page') renderTournamentEditList();
     }
     
     window.openModal = function(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
@@ -572,7 +589,7 @@
     // *** FIX: Ensure navigation listeners are set ONLY after the DOM is fully interactive ***
     function initializeNavigation() {
         document.querySelectorAll('[data-page-target]').forEach(el => {
-            el.removeEventListener('click', handleNavClick); // Remove existing listener to prevent duplicates
+            el.removeEventListener('click', handleNavClick);
             el.addEventListener('click', handleNavClick);
         });
     }
@@ -584,7 +601,7 @@
     
     document.addEventListener('DOMContentLoaded', initializeNavigation);
 
-    // --- DASHBOARD & CRUD LOGIC (Rest of the functions are complete and correct) ---
+    // --- DASHBOARD & CRUD LOGIC (All functions are complete and correct) ---
     
     function listenToDashboardData() {
          db.ref('users').on('value', (snapshot) => {
@@ -641,6 +658,35 @@
             alert("Failed to add task: " + error.message);
         }
     }
+    
+    // --- TOURNAMENT MANAGEMENT FUNCTIONS ---
+
+    // Renders the list of upcoming tournaments with an edit button
+    function renderTournamentEditList() {
+        const container = document.getElementById('tournament-edit-list');
+        let html = '';
+        const upcomingTours = Object.entries(allTournamentsData).filter(([id, tour]) => tour.dateTime && tour.dateTime > Date.now() && !tour.results);
+
+        if (upcomingTours.length === 0) {
+            container.innerHTML = '<p>No upcoming tournaments to edit.</p>';
+            return;
+        }
+
+        upcomingTours.forEach(([id, tour]) => {
+            html += `
+                <div class="material-card list-item">
+                    <div>
+                        <strong>${tour.title}</strong>
+                        <p style="font-size: 0.8rem; margin: 4px 0;">Entry: ${tour.entryFee} C | Date: ${new Date(tour.dateTime).toLocaleDateString()}</p>
+                        <p style="font-size: 0.8rem; color: ${tour.roomId ? 'green' : 'orange'};">Room Details: ${tour.roomId ? 'SET' : 'MISSING'}</p>
+                    </div>
+                    <button class="material-btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openEditTournamentModal('${id}')">Edit</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
 
     window.addTournament = async function() {
         const id = document.getElementById('tour-id').value.trim();
@@ -656,7 +702,7 @@
             alert("Please fill in all required fields with valid values.");
             return;
         }
-        if (allTournamentsData[id]) {
+        if ((await db.ref('tournaments/' + id).once('value')).exists()) {
              alert(`Tournament ID '${id}' already exists.`);
              return;
         }
@@ -674,7 +720,7 @@
 
             alert("Tournament Added Successfully!");
             document.getElementById('tour-id').value = document.getElementById('tour-title').value = document.getElementById('tour-datetime').value = document.getElementById('tour-prize').value = document.getElementById('tour-per-kill').value = document.getElementById('tour-entry-fee').value = '';
-            navigateTo('admin-dashboard-page');
+            navigateTo('tournament-management-page');
         } catch (error) {
             alert("Failed to add tournament: " + error.message);
         }
@@ -716,6 +762,8 @@
         }
     }
     
+    // --- TASK REQUESTS ---
+
     function loadTaskRequests() {
         db.ref('taskRequests').orderByChild('status').equalTo('Pending').on('value', (snapshot) => {
             const requests = [];
@@ -833,6 +881,7 @@
         }
     }
 
+    // --- WITHDRAWAL REQUESTS ---
     function loadWithdrawalRequests() {
         db.ref('withdrawalRequests').orderByChild('status').equalTo('Pending').on('value', (snapshot) => {
             const requests = [];
@@ -896,6 +945,7 @@
         }
     }
 
+    // --- USER MANAGEMENT ---
     function loadAllUsers() {
         db.ref('users').on('value', (snapshot) => {
             allUsersData = snapshot.val() || {};
@@ -1014,6 +1064,7 @@
         }
     }
 
+    // --- UPDATES & RESULTS ---
 
     window.postUpdate = async function() {
         const content = document.getElementById('update-content').value.trim();
@@ -1128,4 +1179,4 @@
     }
 </script>
 </body>
-</html>
+                        </html>
