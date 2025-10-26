@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EarnerXd PRO - Admin Panel</title>
     <style>
-        /* CSS styles remain the same */
+        /* CSS styles remain the same for UI fidelity */
         :root {
             --primary-color: #009688; 
             --primary-light: #52c7b8;
@@ -216,6 +216,7 @@
                         <i class="material-icons" style="font-size: 32px;">paid</i>
                         <h3 id="total-rewards-given">0</h3>
                         <p>Rewards Given (Approx)</p>
+                    </p>
                     </div>
                     <div class="stat-box">
                         <i class="material-icons" style="font-size: 32px;">assignment</i>
@@ -374,7 +375,7 @@
                 </div>
 
                 <!-- User Details Modal (for Update Balance/Block) -->
-                <div class="modal-overlay hidden" id="user-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 30;">
+                <div class="modal-overlay hidden" id="user-details-modal">
                     <div class="material-card" style="width: 85%; max-width: 350px; text-align: left;">
                         <h3 id="modal-username" style="margin-top: 0; color: var(--primary-color);"></h3>
                         <p>Email: <span id="modal-email"></span></p>
@@ -447,10 +448,10 @@
     </div>
 </div>
 
-<!-- CRITICAL FIX: Load Firebase using traditional <script> tags for better Webview/APK compatibility -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+<!-- CRITICAL FIX: Load Firebase using traditional <script> tags for max compatibility -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script>
     // --- FIREBASE INITIALIZATION ---
 
@@ -466,26 +467,13 @@
         measurementId: "G-QRTG23N6HQ"
     };
 
-    // Initialize Firebase
-    // Uses the older, globally exposed 'firebase' object for max compatibility
+    // Initialize Firebase (using older, globally available v8 SDK)
     const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+    const auth = app.auth();
+    const db = app.database();
+    
+    // --- UTILITY/GLOBAL SETUP ---
 
-    // Re-map the functions to the globally exposed object
-    const signInWithEmailAndPassword = (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass);
-    const signOut = (auth) => auth.signOut();
-    const onAuthStateChanged = (auth, callback) => auth.onAuthStateChanged(callback);
-
-    const ref = (db, path) => db.ref(path);
-    const set = (ref, value) => ref.set(value);
-    const get = (ref) => ref.once('value');
-    const update = (ref, updates) => ref.update(updates);
-    const onValue = (ref, callback) => ref.on('value', callback);
-    const push = (ref) => ref.push();
-    const query = (ref, orderBy, limit) => ref.orderByChild(orderBy); // Simplified query setup
-
-    // --- GLOBAL STATE ---
     let currentAdminUID = null; 
     let allUsersData = {}; 
     let allTasksData = {}; 
@@ -494,13 +482,10 @@
     let activeTaskRequestId = null;
     let activeTaskAction = null; 
 
-    // Admin Credentials
     const ADMIN_EMAIL = "heml92304@gmail.com";
     const ADMIN_PASS = "Admin12345"; 
-    
-    // --- UI & AUTHENTICATION LOGIC ---
 
-    // Function declarations remain mostly the same, now relying on global scope being correct.
+    // --- Core Functions Exposed Globally ---
 
     window.navigateTo = function(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -534,7 +519,7 @@
     window.openModal = function(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
     window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 
-    // Admin Login Function (Now guaranteed to be called by onclick)
+    // CRITICAL: Guaranteed Login function using V8 SDK
     window.handleAdminLogin = async function() {
         const email = document.getElementById('admin-email').value;
         const password = document.getElementById('admin-password').value;
@@ -548,7 +533,7 @@
         }
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            await auth.signInWithEmailAndPassword(email, password);
         } catch (error) {
             errorElement.textContent = "Firebase Login Failed: " + error.message;
             errorElement.classList.remove('hidden');
@@ -557,7 +542,7 @@
 
     window.handleAdminLogout = async function() {
         try {
-            await signOut(auth);
+            await auth.signOut();
             document.getElementById('admin-email').value = '';
             document.getElementById('admin-password').value = '';
         } catch (error) {
@@ -565,7 +550,8 @@
         }
     }
 
-    onAuthStateChanged(auth, (user) => {
+    // Auth State Listener (Critical for UI switch)
+    auth.onAuthStateChanged((user) => {
         if (user && user.email === ADMIN_EMAIL) {
             currentAdminUID = user.uid;
             document.getElementById('admin-auth-page').classList.add('hidden');
@@ -583,10 +569,10 @@
         }
     });
 
-    // --- DASHBOARD & CRUD LOGIC (All functions below are complete and correct) ---
+    // --- DASHBOARD & CRUD LOGIC (Rest of the functions) ---
     
     function listenToDashboardData() {
-         onValue(ref(db, 'users'), (snapshot) => {
+         db.ref('users').on('value', (snapshot) => {
             const users = snapshot.val() || {};
             allUsersData = users;
             let count = 0;
@@ -605,14 +591,14 @@
     }
 
     function listenToTasks() {
-        onValue(ref(db, 'tasks'), (snapshot) => {
+        db.ref('tasks').on('value', (snapshot) => {
             allTasksData = snapshot.val() || {};
             document.getElementById('total-tasks-added').textContent = Object.keys(allTasksData).length;
         });
     }
 
     function listenToTournaments() {
-        onValue(ref(db, 'tournaments'), (snapshot) => {
+        db.ref('tournaments').on('value', (snapshot) => {
             allTournamentsData = snapshot.val() || {};
             document.getElementById('total-tournaments-added').textContent = Object.keys(allTournamentsData).length;
         });
@@ -631,8 +617,7 @@
         }
 
         try {
-            const newTaskRef = push(ref(db, 'tasks'));
-            await set(newTaskRef, { name, reward, link, steps, remark, createdAt: Date.now() });
+            await db.ref('tasks').push().set({ name, reward, link, steps, remark, createdAt: firebase.database.ServerValue.TIMESTAMP });
 
             alert("Task Added Successfully!");
             document.getElementById('task-name').value = document.getElementById('task-reward').value = document.getElementById('task-link').value = document.getElementById('task-steps').value = document.getElementById('task-remark').value = '';
@@ -662,14 +647,14 @@
         }
 
         try {
-            await set(ref(db, 'tournaments/' + id), {
+            await db.ref('tournaments/' + id).set({
                 id, title, mode,
                 dateTime: new Date(dateTime).getTime(),
                 prizePool, perKill, entryFee,
                 joinedUsers: {}, results: null,
                 roomId: '',
                 roomPass: '',
-                createdAt: Date.now()
+                createdAt: firebase.database.ServerValue.TIMESTAMP
             });
 
             alert("Tournament Added Successfully!");
@@ -708,7 +693,7 @@
                 updates.dateTime = new Date(newDateTimeString).getTime();
             }
 
-            await update(ref(db, `tournaments/${tourId}`), updates);
+            await db.ref(`tournaments/${tourId}`).update(updates);
             closeModal('edit-tournament-modal');
             alert("Tournament details updated successfully!");
         } catch (error) {
@@ -716,6 +701,14 @@
         }
     }
     
+    function loadTaskRequests() {
+        db.ref('taskRequests').orderByChild('status').equalTo('Pending').on('value', (snapshot) => {
+            const requests = [];
+            snapshot.forEach(child => requests.push({ id: child.key, ...child.val() }));
+            renderTaskRequests(requests);
+        });
+    }
+
     function renderTaskRequests(requests) {
         const container = document.getElementById('task-requests-list');
         if (requests.length === 0) {
@@ -770,7 +763,7 @@
         const { userId, taskId, action } = activeTaskAction;
 
         try {
-            await update(ref(db, 'taskRequests/' + activeTaskRequestId), { 
+            await db.ref('taskRequests/' + activeTaskRequestId).update({ 
                 status: action, 
                 [action.toLowerCase() + 'By']: currentAdminUID,
                 [action.toLowerCase() + 'Time']: Date.now(),
@@ -778,14 +771,14 @@
             });
 
             if (action === 'Rework') {
-                 await update(ref(db, 'users/' + userId + '/tasksPending'), {
+                 await db.ref('users/' + userId + '/tasksPending').update({
                     [taskId]: { status: 'Rework', reworkReason: reason, timestamp: Date.now(), taskName: activeTaskAction.taskName }
                  });
             } else if (action === 'Reject') {
-                 await update(ref(db, 'users/' + userId + '/tasksCompleted'), {
+                 await db.ref('users/' + userId + '/tasksCompleted').update({
                     [taskId]: { status: 'Rejected', reason: reason, timestamp: Date.now(), taskName: activeTaskAction.taskName }
                  });
-                 await update(ref(db, 'users/' + userId + '/tasksPending'), { [taskId]: null });
+                 await db.ref('users/' + userId + '/tasksPending').child(taskId).remove();
             }
 
             alert(`Task marked as ${action} successfully!`);
@@ -801,25 +794,23 @@
         if (!confirm(`Confirm approval for ${taskName} to reward ${reward} Coins?`)) return;
 
         try {
-            const userRef = ref(db, 'users/' + userId);
-            const userSnapshot = await get(userRef);
-            const userData = userSnapshot.val();
+            const userRef = db.ref('users/' + userId);
+            const userData = (await userRef.once('value')).val();
             if (!userData) throw new Error("User not found.");
 
             const newCoins = (userData.coins || 0) + reward;
             const newTotalEarned = (userData.totalEarned || 0) + reward;
 
-            await update(userRef, {
+            await userRef.update({
                 coins: newCoins,
                 totalEarned: newTotalEarned,
                 [`tasksCompleted/${taskId}`]: { taskName: taskName, reward: reward, status: 'Completed', timestamp: Date.now() },
                 [`tasksPending/${taskId}`]: null
             });
 
-            const txRef = push(ref(db, 'users/' + userId + '/transactions'));
-            await set(txRef, { type: 'Credit', amount: reward, reason: `Task Reward: ${taskName}`, status: 'Completed', timestamp: Date.now() });
+            await db.ref('users/' + userId + '/transactions').push().set({ type: 'Credit', amount: reward, reason: `Task Reward: ${taskName}`, status: 'Completed', timestamp: Date.now() });
 
-            await update(ref(db, 'taskRequests/' + reqId), { status: 'Approved', approvedBy: currentAdminUID, approvalTime: Date.now() });
+            await db.ref('taskRequests/' + reqId).update({ status: 'Approved', approvedBy: currentAdminUID, approvalTime: Date.now() });
 
             alert("Task Approved and Coins Credited!");
         } catch (error) {
@@ -828,12 +819,9 @@
     }
 
     function loadWithdrawalRequests() {
-        const requestsRef = query(ref(db, 'withdrawalRequests'), orderByChild('status'), equalTo('Pending'));
-        onValue(requestsRef, (snapshot) => {
+        db.ref('withdrawalRequests').orderByChild('status').equalTo('Pending').on('value', (snapshot) => {
             const requests = [];
-            snapshot.forEach(childSnapshot => {
-                requests.push({ id: childSnapshot.key, ...childSnapshot.val() });
-            });
+            snapshot.forEach(child => requests.push({ id: child.key, ...child.val() }));
             renderWithdrawalRequests(requests);
         });
     }
@@ -864,8 +852,8 @@
         if (!confirm(`Confirm payment? Coins are ALREADY deducted from user's balance.`)) return;
         
         try {
-            await update(ref(db, 'withdrawalRequests/' + reqId), { status: 'Completed', completionTime: Date.now() });
-            await update(ref(db, `users/${userId}/transactions/${txKey}`), { status: 'Paid' });
+            await db.ref('withdrawalRequests/' + reqId).update({ status: 'Completed', completionTime: Date.now() });
+            await db.ref(`users/${userId}/transactions/${txKey}`).update({ status: 'Paid' });
             alert("Withdrawal marked as Paid (Completed).");
         } catch (error) {
             alert("Approval Failed: " + error.message);
@@ -876,17 +864,16 @@
         if (!confirm(`Confirm rejection and refund of ${amount} Coins to the user?`)) return;
         
         try {
-            const userRef = ref(db, 'users/' + userId);
-            const userSnapshot = await get(userRef);
-            const currentCoins = userSnapshot.val().coins || 0;
+            const userRef = db.ref('users/' + userId);
+            const userData = (await userRef.once('value')).val();
+            const currentCoins = userData.coins || 0;
             const newCoins = currentCoins + amount;
 
-            await update(userRef, { coins: newCoins });
-            const txRef = push(ref(db, 'users/' + userId + '/transactions'));
-            await set(txRef, { type: 'Credit', amount: amount, reason: 'Withdrawal Request Refunded (Rejected)', status: 'Completed', timestamp: Date.now() });
+            await userRef.update({ coins: newCoins });
+            await db.ref('users/' + userId + '/transactions').push().set({ type: 'Credit', amount: amount, reason: 'Withdrawal Request Refunded (Rejected)', status: 'Completed', timestamp: Date.now() });
             
-            await update(ref(db, `users/${userId}/transactions/${txKey}`), { status: 'Refunded/Rejected' });
-            await update(ref(db, 'withdrawalRequests/' + reqId), { status: 'Rejected', rejectionTime: Date.now() });
+            await db.ref(`users/${userId}/transactions/${txKey}`).update({ status: 'Refunded/Rejected' });
+            await db.ref('withdrawalRequests/' + reqId).update({ status: 'Rejected', rejectionTime: Date.now() });
 
             alert("Withdrawal Rejected and Coins Refunded.");
         } catch (error) {
@@ -895,7 +882,10 @@
     }
 
     function loadAllUsers() {
-        renderUsersList(allUsersData);
+        db.ref('users').on('value', (snapshot) => {
+            allUsersData = snapshot.val() || {};
+            renderUsersList(allUsersData);
+        });
         document.getElementById('user-search').addEventListener('input', filterUsers);
     }
     
@@ -926,7 +916,7 @@
             
             const statusColor = user.isBlocked ? 'var(--secondary-color)' : 'var(--primary-color)';
             return `
-                <div class="material-card list-item" style="border-left: 5px solid ${statusColor};" onclick="viewUserDetails('${uid}')">
+                <div class="material-card list-item" onclick="viewUserDetails('${uid}')">
                     <strong>${user.username || 'N/A'}</strong> (${user.email})
                     <p style="margin: 4px 0; font-size: 0.9rem;">Coins: ${user.coins || 0} | Status: ${user.isBlocked ? 'BLOCKED' : 'Active'}</p>
                 </div>
@@ -942,7 +932,7 @@
         const taskCount = Object.keys(user.tasksCompleted || {}).filter(key => user.tasksCompleted[key].status === 'Completed').length;
         const tournamentCount = Object.keys(user.joinedTournaments || {}).length;
 
-        currentAdminUID = user.uid;
+        activeUserForModal = uid;
         document.getElementById('modal-username').textContent = user.username;
         document.getElementById('modal-email').textContent = user.email;
         document.getElementById('modal-coins').textContent = user.coins;
@@ -969,15 +959,13 @@
         }
 
         try {
-            const userRef = ref(db, 'users/' + uid);
-            const userSnapshot = await get(userRef);
-            const currentCoins = userSnapshot.val().coins || 0;
+            const userRef = db.ref('users/' + uid);
+            const currentCoins = (await userRef.once('value')).val().coins || 0;
             const newCoins = currentCoins + amount;
 
-            await update(userRef, { coins: newCoins });
+            await userRef.update({ coins: newCoins });
 
-            const txRef = push(ref(db, 'users/' + uid + '/transactions'));
-            await set(txRef, {
+            await db.ref('users/' + uid + '/transactions').push().set({
                 type: amount > 0 ? 'Credit' : 'Debit',
                 amount: Math.abs(amount),
                 reason: `Admin Adjustment: ${reason}`,
@@ -1002,7 +990,7 @@
         if (!confirm(`Are you sure you want to ${action} ${user.username}? ${newBlockStatus ? 'Blocking will also prevent their login in the user app.' : ''}`)) return;
 
         try {
-            await update(ref(db, 'users/' + uid), { isBlocked: newBlockStatus });
+            await db.ref('users/' + uid).update({ isBlocked: newBlockStatus });
             
             alert(`${user.username} ${action}ed successfully.`);
             closeModal('user-details-modal');
@@ -1021,8 +1009,7 @@
         }
 
         try {
-            const newUpdateRef = push(ref(db, 'updates'));
-            await set(newUpdateRef, {
+            await db.ref('updates').push().set({
                 content: content,
                 postedBy: currentAdminUID,
                 timestamp: Date.now()
@@ -1099,20 +1086,18 @@
 
         try {
             for (const winner of validWinners) {
-                const userRef = ref(db, 'users/' + winner.userId);
-                const userSnapshot = await get(userRef);
-                const userData = userSnapshot.val();
+                const userRef = db.ref('users/' + winner.userId);
+                const userData = (await userRef.once('value')).val();
 
                 const newCoins = (userData.coins || 0) + winner.reward;
                 const newTotalEarned = (userData.totalEarned || 0) + winner.reward;
 
-                await update(userRef, { coins: newCoins, totalEarned: newTotalEarned });
+                await userRef.update({ coins: newCoins, totalEarned: newTotalEarned });
 
-                const txRef = push(ref(db, 'users/' + winner.userId + '/transactions'));
-                await set(txRef, { type: 'Credit', amount: winner.reward, reason: `Tournament Reward: ${allTournamentsData[tourId].title} (Rank ${winner.rank})`, status: 'Completed', timestamp: Date.now() });
+                await db.ref('users/' + winner.userId + '/transactions').push().set({ type: 'Credit', amount: winner.reward, reason: `Tournament Reward: ${allTournamentsData[tourId].title} (Rank ${winner.rank})`, status: 'Completed', timestamp: Date.now() });
             }
 
-            await update(ref(db, 'tournaments/' + tourId), { results: validWinners, resultsPosted: Date.now() });
+            await db.ref('tournaments/' + tourId).update({ results: validWinners, resultsPosted: Date.now() });
 
             alert(`Tournament results posted and ${validWinners.length} payouts completed!`);
             
