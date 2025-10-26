@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnerXd PRO - Admin Panel</title>
+    <style>
+        /* CSS styles remain the same */
+        :root {
+            --primary-color: #009688; 
+            --primary-light: #52c7b8;
+            --secondary-color: #FF5252;
+            --background-color: #e8eaf6;
+            --surface-color: #ffffff;
+            --on-primary: #ffffff;
+            --on-surface: #1f1f1f;
+            --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+        body {
+            font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .mobile-container {
+            width: 100%;
+            height: 100vh;
+            max-width: 420px;
+            max-height: 850px;
+            background-color: var(--surface-color);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        .hidden { display: none !important; }
+        .page {
+            flex-grow: 1;
+            padding-top: 56px;
+            padding-bottom: 24px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .material-card {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-elevation);
+            padding: 16px;
+            margin: 16px 0;
+            transition: all 0.3s ease;
+        }
+        .material-btn {
+            background-color: var(--primary-color);
+            color: var(--on-primary);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 500;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .material-btn:hover { background-color: #00796B; }
+        .material-btn:active { box-shadow: none; }
+        .danger-btn { background-color: var(--secondary-color); }
+        .danger-btn:hover { background-color: #D32F2F; }
+
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 24px;
+            text-align: center;
+        }
+        .auth-container h1 { color: var(--primary-color); }
+        .auth-container input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .app-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            height: 56px;
+            background-color: var(--primary-color);
+            color: var(--on-primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 10;
+            max-width: 420px;
+        }
+        .app-bar h2 { margin: 0; font-size: 1.25rem; font-weight: 400; }
+        .app-bar-icons span { margin-left: 8px; cursor: pointer; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 16px;
+            background-color: var(--primary-light);
+            color: var(--on-primary);
+            border-radius: 8px;
+            box-shadow: var(--shadow-elevation);
+        }
+        .stat-box h3 { margin: 0 0 4px 0; font-size: 1.5rem; }
+        .stat-box p { margin: 0; font-size: 0.8rem; opacity: 0.8; }
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .action-btn {
+            padding: 16px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: var(--shadow-elevation);
+            transition: all 0.2s;
+            background-color: var(--surface-color);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        .action-btn:hover { background-color: #f0f0f0; }
+        .action-btn i { font-size: 32px; display: block; margin-bottom: 8px; }
+
+        .material-form input, .material-form textarea, .material-form select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 16px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .material-form label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        .list-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .list-item:hover { background-color: #f9f9f9; }
+        .back-to-home {
+            width: calc(100% - 32px);
+            margin: 16px;
+            text-align: center;
+        }
+    </style>
+    <!-- Material Icons CDN -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<div class="mobile-container">
+
+    <!-- Admin Login Page -->
+    <div class="auth-container" id="admin-auth-page">
+        <h1>Admin Panel</h1>
+        <p>Firebase Authentication Required</p>
+        <input type="email" id="admin-email" placeholder="Admin Email" value="heml92304@gmail.com">
+        <input type="password" id="admin-password" placeholder="Password" value="Admin12345">
+        <!-- Changed to inline onclick for maximum compatibility in problematic environments -->
+        <button class="material-btn" onclick="window.handleAdminLogin()" style="width: 100%;">Login as Admin</button>
+        <p id="admin-login-error" style="color: var(--secondary-color); margin-top: 10px;" class="hidden"></p>
+    </div>
+
+    <!-- Main Admin App Container (Hidden until logged in) -->
+    <div id="admin-app" class="hidden" style="display: flex; flex-direction: column; flex-grow: 1; height: 100%;">
+
+        <!-- Top Bar -->
+        <header class="app-bar">
+            <span id="back-btn" onclick="navigateTo('admin-dashboard-page')" class="hidden"><i class="material-icons">arrow_back</i></span>
+            <h2 id="app-bar-title">Admin Dashboard</h2>
+            <div class="app-bar-icons">
+                <span onclick="handleAdminLogout()"><i class="material-icons">exit_to_app</i></span>
+            </div>
+        </header>
+
+        <!-- Dynamic Page Content -->
+        <div class="page-area" style="flex-grow: 1; overflow-y: auto;">
+            
+            <!-- ADMIN HOME DASHBOARD -->
+            <div class="page page-content active-page" id="admin-dashboard-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">System Overview</h1>
+                <div class="dashboard-grid">
+                    <div class="stat-box">
+                        <i class="material-icons" style="font-size: 32px;">group</i>
+                        <h3 id="total-users-count">0</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-box">
+                        <i class="material-icons" style="font-size: 32px;">paid</i>
+                        <h3 id="total-rewards-given">0</h3>
+                        <p>Rewards Given (Approx)</p>
+                    </div>
+                    <div class="stat-box">
+                        <i class="material-icons" style="font-size: 32px;">assignment</i>
+                        <h3 id="total-tasks-added">0</h3>
+                        <p>Tasks Added</p>
+                    </div>
+                    <div class="stat-box">
+                        <i class="material-icons" style="font-size: 32px;">emoji_events</i>
+                        <h3 id="total-tournaments-added">0</h3>
+                        <p>Tournaments Added</p>
+                    </div>
+                </div>
+
+                <h2 style="color: var(--primary-color); margin-top: 32px;">Admin Actions</h2>
+                <div class="action-grid">
+                    <div class="action-btn" data-page-target="add-task-page">
+                        <i class="material-icons">note_add</i>
+                        <span>Add Task</span>
+                    </div>
+                    <div class="action-btn" data-page-target="add-tournament-page">
+                        <i class="material-icons">add_box</i>
+                        <span>Add Tournament</span>
+                    </div>
+                    <div class="action-btn" data-page-target="task-requests-page">
+                        <i class="material-icons">check_circle</i>
+                        <span>Task Requests</span>
+                    </div>
+                    <div class="action-btn" data-page-target="withdrawal-requests-page">
+                        <i class="material-icons">account_balance_wallet</i>
+                        <span>Withdrawals</span>
+                    </div>
+                    <div class="action-btn" data-page-target="all-users-page">
+                        <i class="material-icons">people_alt</i>
+                        <span>All Users Info</span>
+                    </div>
+                    <div class="action-btn" data-page-target="post-updates-page">
+                        <i class="material-icons">campaign</i>
+                        <span>Post Updates</span>
+                    </div>
+                    <div class="action-btn" data-page-target="tournament-results-page">
+                        <i class="material-icons">leaderboard</i>
+                        <span>Post Results</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADD TASK PAGE -->
+            <div class="page page-content hidden" id="add-task-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Add New Task</h1>
+                <div class="material-card material-form">
+                    <label for="task-name">Task Name</label>
+                    <input type="text" id="task-name" placeholder="e.g., Complete Daily Survey">
+                    
+                    <label for="task-reward">Reward (Coins)</label>
+                    <input type="number" id="task-reward" placeholder="e.g., 50">
+                    
+                    <label for="task-link">Task Link/URL</label>
+                    <input type="text" id="task-link" placeholder="e.g., https://example.com/task">
+                    
+                    <label for="task-steps">Steps to Complete</label>
+                    <input type="text" id="task-steps" placeholder="e.g., 5 steps (Short description)">
+
+                    <label for="task-remark">Internal Remark (Optional)</label>
+                    <textarea id="task-remark" rows="3" placeholder="Notes for this task..."></textarea>
+                    
+                    <button class="material-btn" onclick="addTask()">Add Task</button>
+                </div>
+            </div>
+
+            <!-- ADD TOURNAMENT PAGE -->
+            <div class="page page-content hidden" id="add-tournament-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Add New Tournament</h1>
+                <div class="material-card material-form">
+                    <label for="tour-id">Tournament ID (Unique)</label>
+                    <input type="text" id="tour-id" placeholder="e.g., BGMI-001">
+                    
+                    <label for="tour-title">Title</label>
+                    <input type="text" id="tour-title" placeholder="e.g., Weekly BGMI Squads">
+                    
+                    <label for="tour-datetime">Date/Time (Local)</label>
+                    <input type="datetime-local" id="tour-datetime">
+                    
+                    <label for="tour-prize">Prize Pool (Coins)</label>
+                    <input type="number" id="tour-prize" placeholder="e.g., 5000">
+                    
+                    <label for="tour-per-kill">Reward Per Kill (Coins)</label>
+                    <input type="number" id="tour-per-kill" placeholder="e.g., 10">
+
+                    <label for="tour-entry-fee">Entry Fee (Coins)</label>
+                    <input type="number" id="tour-entry-fee" placeholder="e.g., 50">
+                    
+                    <label for="tour-mode">Mode (Solo/Duo/Squad)</label>
+                    <select id="tour-mode">
+                        <option value="Solo">Solo</option>
+                        <option value="Duo">Duo</option>
+                        <option value="Squad">Squad</option>
+                    </select>
+
+                    <button class="material-btn" onclick="addTournament()">Add Tournament</button>
+                </div>
+            </div>
+            
+            <!-- EDIT TOURNAMENT MODAL (Hidden by default) -->
+            <div class="modal-overlay hidden" id="edit-tournament-modal">
+                <div class="modal-content" style="text-align: left;">
+                    <h3>Edit Tournament: <span id="modal-edit-tour-title"></span></h3>
+                    <div class="material-form">
+                        <label>Room ID</label>
+                        <input type="text" id="edit-room-id" placeholder="Enter Room ID">
+                        <label>Room Password</label>
+                        <input type="text" id="edit-room-pass" placeholder="Enter Room Password">
+                        <label>New Date/Time (Optional)</label>
+                        <input type="datetime-local" id="edit-datetime">
+                        <button class="material-btn" style="width: 100%;" onclick="saveEditedTournament()">Save Changes</button>
+                        <button class="material-btn" style="width: 100%; background-color: #757575; margin-top: 8px;" onclick="closeModal('edit-tournament-modal')">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TASK REQUESTS PAGE -->
+            <div class="page page-content hidden" id="task-requests-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Task Submission Requests</h1>
+                <div id="task-requests-list">
+                    <p>No pending task requests.</p>
+                </div>
+            </div>
+            
+            <!-- Rework/Reject Modal -->
+            <div class="modal-overlay hidden" id="task-action-modal">
+                <div class="modal-content" style="text-align: left;">
+                    <h3 id="modal-action-title"></h3>
+                    <p>User: <strong id="modal-action-username"></strong> | Task: <strong id="modal-action-taskname"></strong></p>
+                    <label for="action-reason">Reason/Instructions:</label>
+                    <textarea id="action-reason" rows="3" placeholder="Enter reason for rejection or instructions for rework..."></textarea>
+                    
+                    <button class="material-btn" style="width: 100%;" id="modal-action-confirm-btn" onclick="confirmTaskAction()"></button>
+                    <button class="material-btn" style="width: 100%; background-color: #757575; margin-top: 8px;" onclick="closeModal('task-action-modal')">Cancel</button>
+                </div>
+            </div>
+
+
+            <!-- WITHDRAWAL REQUESTS PAGE (Same as before) -->
+            <div class="page page-content hidden" id="withdrawal-requests-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Withdrawal Requests</h1>
+                <div id="withdrawal-requests-list">
+                    <p>No pending withdrawal requests.</p>
+                </div>
+            </div>
+
+            <!-- ALL USERS INFO PAGE -->
+            <div class="page page-content hidden" id="all-users-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">All Users Management</h1>
+                <input type="text" id="user-search" placeholder="Search by Username/Email" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: 4px;">
+                <div id="users-list">
+                    <p>Loading users...</p>
+                </div>
+
+                <!-- User Details Modal (for Update Balance/Block) -->
+                <div class="modal-overlay hidden" id="user-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 30;">
+                    <div class="material-card" style="width: 85%; max-width: 350px; text-align: left;">
+                        <h3 id="modal-username" style="margin-top: 0; color: var(--primary-color);"></h3>
+                        <p>Email: <span id="modal-email"></span></p>
+                        <p>Current Coins: <strong id="modal-coins"></strong></p>
+                        <p>Total Earned: <span id="modal-total-earned"></span></p>
+                        <p>Tasks/Tournaments: <span id="modal-user-stats"></span></p>
+                        <p>Status: <strong id="modal-status"></strong></p>
+
+                        <h4 style="margin-top: 20px;">Update Balance</h4>
+                        <input type="number" id="balance-amount" placeholder="Amount to Add (+)/Subtract (-)">
+                        <textarea id="balance-reason" rows="2" placeholder="Reason for change (required for user transaction history)"></textarea>
+                        <button class="material-btn" style="width: 100%; margin-top: 8px;" onclick="updateUserBalance()">Save Balance</button>
+
+                        <button class="material-btn danger-btn" style="width: 100%; margin-top: 16px;" id="block-unblock-btn" onclick="toggleBlockUser()">Block/Unblock User</button>
+                        <button class="material-btn" style="width: 100%; background-color: #757575; margin-top: 8px;" onclick="closeModal('user-details-modal')">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POST UPDATES PAGE (Same as before) -->
+            <div class="page page-content hidden" id="post-updates-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Post App Update</h1>
+                <div class="material-card material-form">
+                    <label for="update-content">Update Content</label>
+                    <textarea id="update-content" rows="6" placeholder="Type your app update announcement here..."></textarea>
+                    
+                    <button class="material-btn" onclick="postUpdate()">Post Update to Users</button>
+                </div>
+            </div>
+
+            <!-- ADD TOURNAMENT RESULTS PAGE (Results Payout) -->
+            <div class="page page-content hidden" id="tournament-results-page" style="padding: 16px;">
+                <h1 style="color: var(--primary-color); margin-top: 0;">Post Tournament Results</h1>
+                <div class="material-card material-form">
+                    <label for="select-tournament">Select Tournament</label>
+                    <select id="select-tournament" style="margin-bottom: 20px;">
+                        <option value="">-- Select Tournament --</option>
+                    </select>
+
+                    <h3 style="margin-bottom: 10px;">Top 3 Winners (Username)</h3>
+                    <!-- Rank 1 -->
+                    <label>Rank 1 (Username)</label>
+                    <input type="text" id="rank1-username" placeholder="User's Username">
+                    <label>Rank 1 Reward (Coins)</label>
+                    <input type="number" id="rank1-reward" placeholder="Coins">
+
+                    <!-- Rank 2 -->
+                    <label style="margin-top: 10px;">Rank 2 (Username)</label>
+                    <input type="text" id="rank2-username" placeholder="User's Username">
+                    <label>Rank 2 Reward (Coins)</label>
+                    <input type="number" id="rank2-reward" placeholder="Coins">
+
+                    <!-- Rank 3 -->
+                    <label style="margin-top: 10px;">Rank 3 (Username)</label>
+                    <input type="text" id="rank3-username" placeholder="User's Username">
+                    <label>Rank 3 Reward (Coins)</label>
+                    <input type="number" id="rank3-reward" placeholder="Coins">
+                    
+                    <button class="material-btn" onclick="addTournamentResults()">Post Results & Payout</button>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Back to Home Button -->
+        <div class="back-to-home">
+            <button class="material-btn" style="width: 100%; background-color: #757575;" onclick="handleAdminLogout()">Logout</button>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+<script>
+    // --- FIREBASE INITIALIZATION ---
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDk6xgLmdFFD1dujl8N0_Aas_pLZhCD4no",
+        authDomain: "earnerxdpro.firebaseapp.com",
+        databaseURL: "https://earnerxdpro-default-rtdb.firebaseio.com",
+        projectId: "earnerxdpro",
+        storageBucket: "earnerxdpro.firebasestorage.app",
+        messagingSenderId: "809985381581",
+        appId: "1:809985381581:web:08745305d018aec46f4584",
+        measurementId: "G-QRTG23N6HQ"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // Firebase References (Simplified access based on globals)
+    const signInWithEmailAndPassword = (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass);
+    const signOut = (auth) => auth.signOut();
+    const onAuthStateChanged = (auth, callback) => auth.onAuthStateChanged(callback);
+
+    const ref = (db, path) => db.ref(path);
+    const set = (ref, value) => ref.set(value);
+    const get = (ref) => ref.once('value');
+    const update = (ref, updates) => ref.update(updates);
+    const onValue = (ref, callback) => ref.on('value', callback);
+    const push = (ref) => ref.push();
+    const query = (ref, ...constraints) => ref.orderByChild(...constraints); // Simplified query setup
+    const equalTo = (val) => val; // Placeholder for simplified query usage
+
+    // --- GLOBAL STATE ---
+    let currentAdminUID = null; 
+    let allUsersData = {}; 
+    let allTasksData = {}; 
+    let allTournamentsData = {};
+    let activeUserForModal = null;
+    let activeTaskRequestId = null;
+    let activeTaskAction = null; 
+
+    // Admin Credentials
+    const ADMIN_EMAIL = "heml92304@gmail.com";
+    const ADMIN_PASS = "Admin12345"; 
+    
+    // --- UI & AUTHENTICATION LOGIC ---
+
+    window.navigateTo = function(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById(pageId).classList.remove('hidden');
+
+        const titleMap = {
+            'admin-dashboard-page': 'Admin Dashboard',
+            'add-task-page': 'Add New Task',
+            'add-tournament-page': 'Add New Tournament',
+            'task-requests-page': 'Task Requests',
+            'withdrawal-requests-page': 'Withdrawals',
+            'all-users-page': 'All Users Info',
+            'post-updates-page': 'Post Updates',
+            'tournament-results-page': 'Post Results'
+        };
+
+        document.getElementById('app-bar-title').textContent = titleMap[pageId] || 'Admin Panel';
+        if (pageId !== 'admin-dashboard-page') {
+            document.getElementById('back-btn').classList.remove('hidden');
+        } else {
+            document.getElementById('back-btn').classList.add('hidden');
+        }
+
+        if (pageId === 'admin-dashboard-page') listenToDashboardData();
+        if (pageId === 'task-requests-page') loadTaskRequests();
+        if (pageId === 'withdrawal-requests-page') loadWithdrawalRequests();
+        if (pageId === 'all-users-page') loadAllUsers();
+        if (pageId === 'tournament-results-page') loadTournamentSelect();
+    }
+    
+    window.openModal = function(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
+    window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+    // Admin Login Function (Now in the global scope via window for click access)
+    window.handleAdminLogin = async function() {
+        const email = document.getElementById('admin-email').value;
+        const password = document.getElementById('admin-password').value;
+        const errorElement = document.getElementById('admin-login-error');
+        errorElement.classList.add('hidden');
+
+        if (email !== ADMIN_EMAIL || password !== ADMIN_PASS) {
+             errorElement.textContent = "Invalid Admin Credentials (Client Check).";
+             errorElement.classList.remove('hidden');
+             return;
+        }
+
+        try {
+            // Firebase Login Execution (This is the critical line)
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+            errorElement.textContent = "Firebase Login Failed: " + error.message;
+            errorElement.classList.remove('hidden');
+        }
+    }
+
+    window.handleAdminLogout = async function() {
+        try {
+            await signOut(auth);
+            document.getElementById('admin-email').value = '';
+            document.getElementById('admin-password').value = '';
+        } catch (error) {
+            console.error("Logout Error:", error);
+        }
+    }
+
+    // Auth State Listener
+    onAuthStateChanged(auth, (user) => {
+        if (user && user.email === ADMIN_EMAIL) {
+            currentAdminUID = user.uid;
+            document.getElementById('admin-auth-page').classList.add('hidden');
+            document.getElementById('admin-app').classList.remove('hidden');
+            navigateTo('admin-dashboard-page');
+            
+            listenToDashboardData();
+            listenToTasks();
+            listenToTournaments();
+
+        } else {
+            currentAdminUID = null;
+            document.getElementById('admin-auth-page').classList.remove('hidden');
+            document.getElementById('admin-app').classList.add('hidden');
+        }
+    });
+
+    // --- DASHBOARD & CRUD LOGIC (Rest of the functions) ---
+
+    function listenToDashboardData() {
+         onValue(ref(db, 'users'), (snapshot) => {
+            const users = snapshot.val() || {};
+            allUsersData = users;
+            let count = 0;
+            let totalRewards = 0;
+
+            for (const uid in users) {
+                 if (users[uid].email) {
+                    count++;
+                    totalRewards += users[uid].totalEarned || 0;
+                 }
+            }
+
+            document.getElementById('total-users-count').textContent = count;
+            document.getElementById('total-rewards-given').textContent = totalRewards.toLocaleString();
+        });
+    }
+
+    function listenToTasks() {
+        onValue(ref(db, 'tasks'), (snapshot) => {
+            allTasksData = snapshot.val() || {};
+            document.getElementById('total-tasks-added').textContent = Object.keys(allTasksData).length;
+        });
+    }
+
+    function listenToTournaments() {
+        onValue(ref(db, 'tournaments'), (snapshot) => {
+            allTournamentsData = snapshot.val() || {};
+            document.getElementById('total-tournaments-added').textContent = Object.keys(allTournamentsData).length;
+        });
+    }
+
+    window.addTask = async function() {
+        const name = document.getElementById('task-name').value;
+        const reward = parseInt(document.getElementById('task-reward').value);
+        const link = document.getElementById('task-link').value;
+        const steps = document.getElementById('task-steps').value;
+        const remark = document.getElementById('task-remark').value;
+
+        if (!name || isNaN(reward) || reward <= 0 || !link || !steps) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        try {
+            const newTaskRef = push(ref(db, 'tasks'));
+            await set(newTaskRef, { name, reward, link, steps, remark, createdAt: Date.now() });
+
+            alert("Task Added Successfully!");
+            document.getElementById('task-name').value = document.getElementById('task-reward').value = document.getElementById('task-link').value = document.getElementById('task-steps').value = document.getElementById('task-remark').value = '';
+            navigateTo('admin-dashboard-page');
+        } catch (error) {
+            alert("Failed to add task: " + error.message);
+        }
+    }
+
+    window.addTournament = async function() {
+        const id = document.getElementById('tour-id').value.trim();
+        const title = document.getElementById('tour-title').value.trim();
+        const dateTime = document.getElementById('tour-datetime').value;
+        const prizePool = parseInt(document.getElementById('tour-prize').value);
+        const perKill = parseInt(document.getElementById('tour-per-kill').value);
+        const entryFee = parseInt(document.getElementById('tour-entry-fee').value);
+        const mode = document.getElementById('tour-mode').value;
+
+
+        if (!id || !title || !dateTime || isNaN(prizePool) || isNaN(perKill) || isNaN(entryFee)) {
+            alert("Please fill in all required fields with valid values.");
+            return;
+        }
+        if (allTournamentsData[id]) {
+             alert(`Tournament ID '${id}' already exists.`);
+             return;
+        }
+
+        try {
+            await set(ref(db, 'tournaments/' + id), {
+                id, title, mode,
+                dateTime: new Date(dateTime).getTime(),
+                prizePool, perKill, entryFee,
+                joinedUsers: {}, results: null,
+                roomId: '',
+                roomPass: '',
+                createdAt: Date.now()
+            });
+
+            alert("Tournament Added Successfully!");
+            document.getElementById('tour-id').value = document.getElementById('tour-title').value = document.getElementById('tour-datetime').value = document.getElementById('tour-prize').value = document.getElementById('tour-per-kill').value = document.getElementById('tour-entry-fee').value = '';
+            navigateTo('admin-dashboard-page');
+        } catch (error) {
+            alert("Failed to add tournament: " + error.message);
+        }
+    }
+
+    window.openEditTournamentModal = function(tourId) {
+        const tour = allTournamentsData[tourId];
+        if (!tour) return alert("Tournament data not found.");
+
+        document.getElementById('modal-edit-tour-title').textContent = tour.title;
+        document.getElementById('edit-room-id').value = tour.roomId || '';
+        document.getElementById('edit-room-pass').value = tour.roomPass || '';
+        document.getElementById('edit-datetime').value = tour.dateTime ? new Date(tour.dateTime).toISOString().substring(0, 16) : '';
+        document.getElementById('edit-tournament-modal').dataset.tourId = tourId;
+
+        openModal('edit-tournament-modal');
+    }
+
+    window.saveEditedTournament = async function() {
+        const tourId = document.getElementById('edit-tournament-modal').dataset.tourId;
+        const roomId = document.getElementById('edit-room-id').value.trim();
+        const roomPass = document.getElementById('edit-room-pass').value.trim();
+        const newDateTimeString = document.getElementById('edit-datetime').value;
+
+        try {
+            const updates = {
+                roomId: roomId,
+                roomPass: roomPass,
+            };
+            if (newDateTimeString) {
+                updates.dateTime = new Date(newDateTimeString).getTime();
+            }
+
+            await update(ref(db, `tournaments/${tourId}`), updates);
+            closeModal('edit-tournament-modal');
+            alert("Tournament details updated successfully!");
+        } catch (error) {
+            alert("Failed to save changes: " + error.message);
+        }
+    }
+    
+    function renderTaskRequests(requests) {
+        const container = document.getElementById('task-requests-list');
+        if (requests.length === 0) {
+            container.innerHTML = '<p>No pending task requests.</p>';
+            return;
+        }
+
+        const html = requests.map(req => `
+            <div class="material-card" style="border-left: 5px solid var(--primary-color);">
+                <strong>${req.taskName}</strong> for ${req.username} (${req.isRework ? 'REWORK' : 'NEW'})
+                <p style="margin: 4px 0;">Reward: <strong>${req.reward} Coins</strong></p>
+                <p style="margin: 4px 0;">Remark: <span style="font-style: italic;">${req.remark || 'N/A'}</span></p>
+                <p style="margin: 4px 0;">SS Link: <a href="${req.ssLink}" target="_blank">View Proof (Click Here)</a></p>
+                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                    <button class="material-btn" onclick="approveTask('${req.id}', '${req.userId}', '${req.taskId}', ${req.reward}, '${req.taskName}')">Approve</button>
+                    <button class="material-btn" style="background-color: orange;" onclick="prepareTaskAction('${req.id}', '${req.userId}', '${req.taskId}', '${req.username}', '${req.taskName}', 'Rework')">Rework</button>
+                    <button class="material-btn danger-btn" onclick="prepareTaskAction('${req.id}', '${req.userId}', '${req.taskId}', '${req.username}', '${req.taskName}', 'Reject')">Reject</button>
+                </div>
+            </div>
+        `).join('');
+        container.innerHTML = html;
+    }
+    
+    window.prepareTaskAction = function(reqId, userId, taskId, username, taskName, action) {
+        activeTaskRequestId = reqId;
+        activeTaskAction = { userId, taskId, username, taskName, action };
+
+        document.getElementById('modal-action-title').textContent = `${action} Submission`;
+        document.getElementById('modal-action-username').textContent = username;
+        document.getElementById('modal-action-taskname').textContent = taskName;
+        document.getElementById('modal-action-confirm-btn').textContent = `Confirm ${action}`;
+        document.getElementById('action-reas
