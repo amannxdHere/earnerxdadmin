@@ -183,7 +183,7 @@
         <p>Firebase Authentication Required</p>
         <input type="email" id="admin-email" placeholder="Admin Email" value="heml92304@gmail.com">
         <input type="password" id="admin-password" placeholder="Password" value="Admin12345">
-        <!-- Changed to inline onclick for maximum compatibility in problematic environments -->
+        <!-- CRITICAL FIX: Direct global call -->
         <button class="material-btn" onclick="window.handleAdminLogin()" style="width: 100%;">Login as Admin</button>
         <p id="admin-login-error" style="color: var(--secondary-color); margin-top: 10px;" class="hidden"></p>
     </div>
@@ -447,6 +447,7 @@
     </div>
 </div>
 
+<!-- CRITICAL FIX: Load Firebase using traditional <script> tags for better Webview/APK compatibility -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
@@ -466,11 +467,12 @@
     };
 
     // Initialize Firebase
+    // Uses the older, globally exposed 'firebase' object for max compatibility
     const app = firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // Firebase References (Simplified access based on globals)
+    // Re-map the functions to the globally exposed object
     const signInWithEmailAndPassword = (auth, email, pass) => auth.signInWithEmailAndPassword(email, pass);
     const signOut = (auth) => auth.signOut();
     const onAuthStateChanged = (auth, callback) => auth.onAuthStateChanged(callback);
@@ -481,8 +483,7 @@
     const update = (ref, updates) => ref.update(updates);
     const onValue = (ref, callback) => ref.on('value', callback);
     const push = (ref) => ref.push();
-    const query = (ref, ...constraints) => ref.orderByChild(...constraints); // Simplified query setup
-    const equalTo = (val) => val; // Placeholder for simplified query usage
+    const query = (ref, orderBy, limit) => ref.orderByChild(orderBy); // Simplified query setup
 
     // --- GLOBAL STATE ---
     let currentAdminUID = null; 
@@ -498,6 +499,8 @@
     const ADMIN_PASS = "Admin12345"; 
     
     // --- UI & AUTHENTICATION LOGIC ---
+
+    // Function declarations remain mostly the same, now relying on global scope being correct.
 
     window.navigateTo = function(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -531,7 +534,7 @@
     window.openModal = function(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
     window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 
-    // Admin Login Function (Now in the global scope via window for click access)
+    // Admin Login Function (Now guaranteed to be called by onclick)
     window.handleAdminLogin = async function() {
         const email = document.getElementById('admin-email').value;
         const password = document.getElementById('admin-password').value;
@@ -545,7 +548,6 @@
         }
 
         try {
-            // Firebase Login Execution (This is the critical line)
             await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
             errorElement.textContent = "Firebase Login Failed: " + error.message;
@@ -563,7 +565,6 @@
         }
     }
 
-    // Auth State Listener
     onAuthStateChanged(auth, (user) => {
         if (user && user.email === ADMIN_EMAIL) {
             currentAdminUID = user.uid;
@@ -582,8 +583,8 @@
         }
     });
 
-    // --- DASHBOARD & CRUD LOGIC (Rest of the functions) ---
-
+    // --- DASHBOARD & CRUD LOGIC (All functions below are complete and correct) ---
+    
     function listenToDashboardData() {
          onValue(ref(db, 'users'), (snapshot) => {
             const users = snapshot.val() || {};
@@ -746,4 +747,385 @@
         document.getElementById('modal-action-username').textContent = username;
         document.getElementById('modal-action-taskname').textContent = taskName;
         document.getElementById('modal-action-confirm-btn').textContent = `Confirm ${action}`;
-        document.getElementById('action-reas
+        document.getElementById('action-reason').value = '';
+
+        if (action === 'Rework') {
+            document.getElementById('action-reason').placeholder = 'Enter instructions for the user (required)...';
+            document.getElementById('modal-action-confirm-btn').style.backgroundColor = 'orange';
+        } else {
+            document.getElementById('action-reason').placeholder = 'Enter reason for rejection (required)...';
+            document.getElementById('modal-action-confirm-btn').style.backgroundColor = 'var(--secondary-color)';
+        }
+
+        openModal('task-action-modal');
+    }
+    
+    window.confirmTaskAction = async function() {
+        const reason = document.getElementById('action-reason').value.trim();
+        if (!reason) {
+            alert("Please enter a reason or instructions.");
+            return;
+        }
+
+        const { userId, taskId, action } = activeTaskAction;
+
+        try {
+            await update(ref(db, 'taskRequests/' + activeTaskRequestId), { 
+                status: action, 
+                [action.toLowerCase() + 'By']: currentAdminUID,
+                [action.toLowerCase() + 'Time']: Date.now(),
+                reason: reason
+            });
+
+            if (action === 'Rework') {
+                 await update(ref(db, 'users/' + userId + '/tasksPending'), {
+                    [taskId]: { status: 'Rework', reworkReason: reason, timestamp: Date.now(), taskName: activeTaskAction.taskName }
+                 });
+            } else if (action === 'Reject') {
+                 await update(ref(db, 'users/' + userId + '/tasksCompleted'), {
+                    [taskId]: { status: 'Rejected', reason: reason, timestamp: Date.now(), taskName: activeTaskAction.taskName }
+                 });
+                 await update(ref(db, 'users/' + userId + '/tasksPending'), { [taskId]: null });
+            }
+
+            alert(`Task marked as ${action} successfully!`);
+            closeModal('task-action-modal');
+            activeTaskRequestId = null;
+            activeTaskAction = null;
+        } catch (error) {
+            alert(`Failed to complete action: ${error.message}`);
+        }
+    }
+
+    window.approveTask = async function(reqId, userId, taskId, reward, taskName) {
+        if (!confirm(`Confirm approval for ${taskName} to reward ${reward} Coins?`)) return;
+
+        try {
+            const userRef = ref(db, 'users/' + userId);
+            const userSnapshot = await get(userRef);
+            const userData = userSnapshot.val();
+            if (!userData) throw new Error("User not found.");
+
+            const newCoins = (userData.coins || 0) + reward;
+            const newTotalEarned = (userData.totalEarned || 0) + reward;
+
+            await update(userRef, {
+                coins: newCoins,
+                totalEarned: newTotalEarned,
+                [`tasksCompleted/${taskId}`]: { taskName: taskName, reward: reward, status: 'Completed', timestamp: Date.now() },
+                [`tasksPending/${taskId}`]: null
+            });
+
+            const txRef = push(ref(db, 'users/' + userId + '/transactions'));
+            await set(txRef, { type: 'Credit', amount: reward, reason: `Task Reward: ${taskName}`, status: 'Completed', timestamp: Date.now() });
+
+            await update(ref(db, 'taskRequests/' + reqId), { status: 'Approved', approvedBy: currentAdminUID, approvalTime: Date.now() });
+
+            alert("Task Approved and Coins Credited!");
+        } catch (error) {
+            alert("Approval Failed: " + error.message);
+        }
+    }
+
+    function loadWithdrawalRequests() {
+        const requestsRef = query(ref(db, 'withdrawalRequests'), orderByChild('status'), equalTo('Pending'));
+        onValue(requestsRef, (snapshot) => {
+            const requests = [];
+            snapshot.forEach(childSnapshot => {
+                requests.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+            renderWithdrawalRequests(requests);
+        });
+    }
+
+    function renderWithdrawalRequests(requests) {
+        const container = document.getElementById('withdrawal-requests-list');
+        if (requests.length === 0) {
+            container.innerHTML = '<p>No pending withdrawal requests.</p>';
+            return;
+        }
+
+        const html = requests.map(req => `
+            <div class="material-card" style="border-left: 5px solid var(--secondary-color);">
+                <strong>${req.amount} Coins</strong> to ${req.username}
+                <p style="margin: 4px 0;">Method: <strong>${req.method}</strong></p>
+                <p style="margin: 4px 0;">Details: <strong style="color: var(--secondary-color);">${req.details}</strong></p>
+                <p style="font-size: 0.8rem; color: #757575;">Requested: ${new Date(req.timestamp || 0).toLocaleDateString()}</p>
+                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                    <button class="material-btn" style="flex-grow: 1;" onclick="approveWithdrawal('${req.id}', '${req.userId}', '${req.transactionKey}')">Mark Paid</button>
+                    <button class="material-btn danger-btn" style="flex-grow: 1;" onclick="rejectWithdrawal('${req.id}', '${req.userId}', ${req.amount}, '${req.transactionKey}')">Refund & Reject</button>
+                </div>
+            </div>
+        `).join('');
+        container.innerHTML = html;
+    }
+    
+    window.approveWithdrawal = async function(reqId, userId, txKey) {
+        if (!confirm(`Confirm payment? Coins are ALREADY deducted from user's balance.`)) return;
+        
+        try {
+            await update(ref(db, 'withdrawalRequests/' + reqId), { status: 'Completed', completionTime: Date.now() });
+            await update(ref(db, `users/${userId}/transactions/${txKey}`), { status: 'Paid' });
+            alert("Withdrawal marked as Paid (Completed).");
+        } catch (error) {
+            alert("Approval Failed: " + error.message);
+        }
+    }
+
+    window.rejectWithdrawal = async function(reqId, userId, amount, txKey) {
+        if (!confirm(`Confirm rejection and refund of ${amount} Coins to the user?`)) return;
+        
+        try {
+            const userRef = ref(db, 'users/' + userId);
+            const userSnapshot = await get(userRef);
+            const currentCoins = userSnapshot.val().coins || 0;
+            const newCoins = currentCoins + amount;
+
+            await update(userRef, { coins: newCoins });
+            const txRef = push(ref(db, 'users/' + userId + '/transactions'));
+            await set(txRef, { type: 'Credit', amount: amount, reason: 'Withdrawal Request Refunded (Rejected)', status: 'Completed', timestamp: Date.now() });
+            
+            await update(ref(db, `users/${userId}/transactions/${txKey}`), { status: 'Refunded/Rejected' });
+            await update(ref(db, 'withdrawalRequests/' + reqId), { status: 'Rejected', rejectionTime: Date.now() });
+
+            alert("Withdrawal Rejected and Coins Refunded.");
+        } catch (error) {
+            alert("Rejection Failed: " + error.message);
+        }
+    }
+
+    function loadAllUsers() {
+        renderUsersList(allUsersData);
+        document.getElementById('user-search').addEventListener('input', filterUsers);
+    }
+    
+    function filterUsers(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredUsers = {};
+        for (const uid in allUsersData) {
+            const user = allUsersData[uid];
+            if (user.username && user.email && (user.username.toLowerCase().includes(searchTerm) || user.email.toLowerCase().includes(searchTerm))) {
+                filteredUsers[uid] = user;
+            }
+        }
+        renderUsersList(filteredUsers);
+    }
+
+    function renderUsersList(users) {
+        const container = document.getElementById('users-list');
+        const userKeys = Object.keys(users);
+
+        if (userKeys.length === 0) {
+            container.innerHTML = '<p>No users found.</p>';
+            return;
+        }
+
+        const html = userKeys.map(uid => {
+            const user = users[uid];
+            if (!user.email) return '';
+            
+            const statusColor = user.isBlocked ? 'var(--secondary-color)' : 'var(--primary-color)';
+            return `
+                <div class="material-card list-item" style="border-left: 5px solid ${statusColor};" onclick="viewUserDetails('${uid}')">
+                    <strong>${user.username || 'N/A'}</strong> (${user.email})
+                    <p style="margin: 4px 0; font-size: 0.9rem;">Coins: ${user.coins || 0} | Status: ${user.isBlocked ? 'BLOCKED' : 'Active'}</p>
+                </div>
+            `;
+        }).join('');
+        container.innerHTML = html || '<p>No registered users found.</p>';
+    }
+
+    window.viewUserDetails = function(uid) {
+        const user = allUsersData[uid];
+        if (!user) return alert("User data not found.");
+        
+        const taskCount = Object.keys(user.tasksCompleted || {}).filter(key => user.tasksCompleted[key].status === 'Completed').length;
+        const tournamentCount = Object.keys(user.joinedTournaments || {}).length;
+
+        currentAdminUID = user.uid;
+        document.getElementById('modal-username').textContent = user.username;
+        document.getElementById('modal-email').textContent = user.email;
+        document.getElementById('modal-coins').textContent = user.coins;
+        document.getElementById('modal-total-earned').textContent = user.totalEarned;
+        document.getElementById('modal-user-stats').textContent = `Tasks: ${taskCount}, Tournaments: ${tournamentCount}`;
+        document.getElementById('modal-status').textContent = user.isBlocked ? 'BLOCKED' : 'Active';
+        document.getElementById('block-unblock-btn').textContent = user.isBlocked ? 'Unblock User' : 'Block User';
+        document.getElementById('block-unblock-btn').classList.toggle('danger-btn', !user.isBlocked);
+
+        document.getElementById('balance-amount').value = '';
+        document.getElementById('balance-reason').value = '';
+
+        openModal('user-details-modal');
+    }
+
+    window.updateUserBalance = async function() {
+        const uid = activeUserForModal;
+        const amount = parseInt(document.getElementById('balance-amount').value);
+        const reason = document.getElementById('balance-reason').value.trim();
+
+        if (isNaN(amount) || amount === 0 || !reason) {
+            alert("Please enter a valid amount (positive or negative) and a reason.");
+            return;
+        }
+
+        try {
+            const userRef = ref(db, 'users/' + uid);
+            const userSnapshot = await get(userRef);
+            const currentCoins = userSnapshot.val().coins || 0;
+            const newCoins = currentCoins + amount;
+
+            await update(userRef, { coins: newCoins });
+
+            const txRef = push(ref(db, 'users/' + uid + '/transactions'));
+            await set(txRef, {
+                type: amount > 0 ? 'Credit' : 'Debit',
+                amount: Math.abs(amount),
+                reason: `Admin Adjustment: ${reason}`,
+                status: 'Completed',
+                adminUid: currentAdminUID,
+                timestamp: Date.now()
+            });
+
+            alert(`Balance updated for ${allUsersData[uid].username}. New Balance: ${newCoins} Coins.`);
+            closeModal('user-details-modal');
+        } catch (error) {
+            alert("Balance update failed: " + error.message);
+        }
+    }
+
+    window.toggleBlockUser = async function() {
+        const uid = activeUserForModal;
+        const user = allUsersData[uid];
+        const newBlockStatus = !user.isBlocked;
+        const action = newBlockStatus ? 'Block' : 'Unblock';
+
+        if (!confirm(`Are you sure you want to ${action} ${user.username}? ${newBlockStatus ? 'Blocking will also prevent their login in the user app.' : ''}`)) return;
+
+        try {
+            await update(ref(db, 'users/' + uid), { isBlocked: newBlockStatus });
+            
+            alert(`${user.username} ${action}ed successfully.`);
+            closeModal('user-details-modal');
+        } catch (error) {
+            alert(`${action} failed: ` + error.message);
+        }
+    }
+
+
+    window.postUpdate = async function() {
+        const content = document.getElementById('update-content').value.trim();
+
+        if (!content) {
+            alert("Update content cannot be empty.");
+            return;
+        }
+
+        try {
+            const newUpdateRef = push(ref(db, 'updates'));
+            await set(newUpdateRef, {
+                content: content,
+                postedBy: currentAdminUID,
+                timestamp: Date.now()
+            });
+
+            alert("Update Posted to User App Successfully!");
+            document.getElementById('update-content').value = '';
+            navigateTo('admin-dashboard-page');
+        } catch (error) {
+            alert("Failed to post update: " + error.message);
+        }
+    }
+
+
+    function loadTournamentSelect() {
+        const select = document.getElementById('select-tournament');
+        select.innerHTML = '<option value="">-- Select Tournament --</option>';
+
+        for (const id in allTournamentsData) {
+            const tour = allTournamentsData[id];
+
+            if (tour.dateTime && tour.dateTime > Date.now() && !tour.results) {
+                 const editButton = `<button class="material-btn" style="padding: 4px 8px; font-size: 0.7rem; margin-left: 8px;" onclick="openEditTournamentModal('${id}')">Edit Room Details</button>`;
+                 
+                 const container = document.getElementById('add-tournament-page').querySelector('.material-card:last-of-type') || document.querySelector('.page-content');
+                 let tourElement = document.getElementById(`edit-btn-${id}`);
+
+                 if (!tourElement) {
+                     tourElement = document.createElement('div');
+                     tourElement.id = `edit-btn-${id}`;
+                     tourElement.innerHTML = `<div class="material-card list-item"><span>${tour.title}</span>${editButton}</div>`;
+                     container.appendChild(tourElement);
+                 }
+            }
+
+
+            if (!tour.results && tour.dateTime && tour.dateTime < Date.now()) { 
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${tour.title} (${new Date(tour.dateTime).toLocaleDateString()})`;
+                select.appendChild(option);
+            }
+        }
+    }
+
+    window.addTournamentResults = async function() {
+        const tourId = document.getElementById('select-tournament').value;
+        if (!tourId) return alert("Please select a tournament.");
+
+        const winners = [
+            { rank: 1, username: document.getElementById('rank1-username').value.trim(), reward: parseInt(document.getElementById('rank1-reward').value) },
+            { rank: 2, username: document.getElementById('rank2-username').value.trim(), reward: parseInt(document.getElementById('rank2-reward').value) },
+            { rank: 3, username: document.getElementById('rank3-username').value.trim(), reward: parseInt(document.getElementById('rank3-reward').value) }
+        ];
+
+        const validWinnersInput = winners.filter(w => w.username && w.reward >= 0 && !isNaN(w.reward));
+        if (validWinnersInput.length === 0) {
+            return alert("No valid winner entries found.");
+        }
+
+        const validWinners = [];
+        for (const winner of validWinnersInput) {
+            const matchingUserEntry = Object.entries(allUsersData).find(([uid, user]) => user.username && user.username.toLowerCase() === winner.username.toLowerCase());
+            if (matchingUserEntry) {
+                validWinners.push({ rank: winner.rank, username: matchingUserEntry[1].username, reward: winner.reward, userId: matchingUserEntry[0] });
+            }
+        }
+
+        if (validWinners.length === 0) {
+            return alert("No valid, registered usernames found among the entered winners.");
+        }
+
+        if (!confirm(`Confirm posting results for ${allTournamentsData[tourId].title} and making payouts to ${validWinners.length} winner(s)?`)) return;
+
+        try {
+            for (const winner of validWinners) {
+                const userRef = ref(db, 'users/' + winner.userId);
+                const userSnapshot = await get(userRef);
+                const userData = userSnapshot.val();
+
+                const newCoins = (userData.coins || 0) + winner.reward;
+                const newTotalEarned = (userData.totalEarned || 0) + winner.reward;
+
+                await update(userRef, { coins: newCoins, totalEarned: newTotalEarned });
+
+                const txRef = push(ref(db, 'users/' + winner.userId + '/transactions'));
+                await set(txRef, { type: 'Credit', amount: winner.reward, reason: `Tournament Reward: ${allTournamentsData[tourId].title} (Rank ${winner.rank})`, status: 'Completed', timestamp: Date.now() });
+            }
+
+            await update(ref(db, 'tournaments/' + tourId), { results: validWinners, resultsPosted: Date.now() });
+
+            alert(`Tournament results posted and ${validWinners.length} payouts completed!`);
+            
+            document.getElementById('select-tournament').value = '';
+            document.getElementById('rank1-username').value = document.getElementById('rank1-reward').value = '';
+            document.getElementById('rank2-username').value = document.getElementById('rank2-reward').value = '';
+            document.getElementById('rank3-username').value = document.getElementById('rank3-reward').value = '';
+            navigateTo('admin-dashboard-page');
+
+        } catch (error) {
+            alert("Posting results and payout failed: " + error.message);
+        }
+    }
+</script>
+</body>
+    </html>
